@@ -6,10 +6,10 @@ import { Button } from '@/components/ui/button';
 export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center text-center min-h-[calc(100vh-4rem)]"> {/* Adjust height as needed */}
-      {/* Placeholder Image/Block */}
+      {/* Placeholder Image/Block
       <div className="w-[600px] h-[300px] bg-gray-300 flex items-center justify-center text-gray-600 text-6xl font-bold rounded-lg shadow-lg mb-8">
         600 x 300
-      </div>
+      </div> */}
 
       <h1 className="text-5xl font-bold text-blue-700 mb-4">
         Seed Inventory System

@@ -12,7 +12,7 @@ export function FullscreenMenu({ isMenuOpen, setIsMenuOpen }) {
   if (!isMenuOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/80 animate-in fade-in-20">
+    <div className="flex flex-col bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/80 animate-in fade-in-20">
       
       {/* Top header inside fullscreen menu */}
       <div className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 border-b">

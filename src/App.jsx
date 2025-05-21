@@ -21,7 +21,11 @@ function App() {
             ))}
           </Routes>
           {/* Conditionally render FullscreenMenu based on isMenuOpen */}
-          {isMenuOpen && <FullscreenMenu isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />}
+          {isMenuOpen && (
+            <div className="fixed inset-0 z-50">
+              <FullscreenMenu isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
+            </div>
+          )}
         </div>
       </div>
     </Router>
