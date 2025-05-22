@@ -17,7 +17,7 @@ export function FullscreenMenu({ isMenuOpen, setIsMenuOpen }) {
       {/* Top header inside fullscreen menu */}
       <div className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 border-b">
         <div className="flex items-center gap-3">
-          <img src="/images/SIS LOGO.svg" alt="SIS Logo" className="h-8 w-auto" />
+          <img src="/logos/square.svg" alt="SIS Logo" className="h-8 w-auto" />
           <h2 className="text-2xl font-bold text-primary">{APP_NAME} Menu</h2>
         </div>
         <Button
