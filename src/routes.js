@@ -4,6 +4,8 @@ import Tasks from "./pages/Tasks";
 import Settings from "./pages/Settings";
 import Home from "./pages/Home";
 import Menu from "./pages/Menu"
+import ScanQR from "./pages/ScanQR";
+import ScanQRDetails from "./pages/ScanQRDetails";
 
 export const routes = [
   {
@@ -36,5 +38,15 @@ export const routes = [
     title: "Profile",
     url: "/profile",
     component: Profile,
+  },
+  {
+    title: "Scan QR",
+    url: "/scan-qr",
+    component: ScanQR,
+  },
+  {
+    title: "Scan QR Details",
+    url: "/scan-qr/details",
+    component: ScanQRDetails,
   },
 ];

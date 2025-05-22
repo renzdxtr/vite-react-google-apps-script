@@ -7,7 +7,7 @@ export const PAGE_TITLES: Record<string, string> = {
   '/menu': 'Menu',
   '/monitor-inventory': 'Monitor Inventory',
   '/scan-qr': 'Scan QR',
-  '/scan-qr/details': 'Scan QR Details',
+  '/scan-qr/details': 'Seed Details',
   '/seed-withdrawal': 'Seed Withdrawal',
   '/Tasks': 'Tasks',
 };
@@ -15,6 +15,7 @@ export const PAGE_TITLES: Record<string, string> = {
 export const MENU_ITEMS = [
   { label: 'Home', href: '/' },
   { label: 'Menu', href: '/menu' },
+  { label: 'Monitor Inventory', href: '/monitor-inventory' },
   { label: 'Scan QR', href: '/scan-qr' },
   { label: 'Seed Withdrawal', href: '/seed-withdrawal' },
   { label: 'Tasks', href: '/Tasks' },
