@@ -1,9 +1,11 @@
-import React, { Suspense } from 'react';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Info, ArrowLeft } from 'lucide-react';
+import { fetchSeedDetailsByQrCode } from '@/lib/googleSheetsApi'; // Import the data fetching utility
+import { Suspense } from 'react';
 
 // Inner component to fetch and display data
 const QRDetailsContent = () => {
@@ -11,38 +13,46 @@ const QRDetailsContent = () => {
   const qrCode = searchParams.get('qrCode');
   const navigate = useNavigate();
 
-  // Placeholder for data fetching logic
-  // In a real application, you would fetch data here based on the qrCode
-  const { data, loading, error } = {
-    data: null as any, // Replace with actual data type
-    loading: false,
-    error: null as string | null,
-  };
+  const [seedDetails, setSeedDetails] = useState<Record<string, string> | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Placeholder data (replace with fetched data structure)
-  const seedDetails = data || {
-    'Seed ID': 'N/A',
-    'Scanned QR Code': qrCode || 'N/A',
-    'Crop': 'Placeholder Crop',
-    'Variety': 'Placeholder Variety',
-    'Generation/Seed Class': 'N/A',
-    'Lot Number': 'N/A',
-    'Date Packaged/Stored': 'N/A',
-    'Initial Volume (kg)': 'N/A',
-    'Current Volume (kg)': 'N/A',
-    'Source': 'N/A',
-    'Location': 'N/A',
-    'Bag Number': 'N/A',
-    'Notes': 'N/A',
-  };
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!qrCode) {
+        setError("QR code not provided in the URL.");
+        setIsLoading(false);
+        return;
+      }
 
-  // Filter data for display
-  const filteredDetails = Object.entries(seedDetails).filter(([key, value]) => {
-    return value !== undefined && value !== null && value !== 'N/A';
+      setIsLoading(true);
+      setError(null);
+      setSeedDetails(null);
+
+      try {
+        const details = await fetchSeedDetailsByQrCode(qrCode);
+        if (details) {
+          setSeedDetails(details);
+        } else {
+          setError(`No seed details found for QR code: '${qrCode}'. Please scan again or check the data source.`);
+        }
+      } catch (err: any) {
+        console.error("Error fetching seed details:", err);
+        setError(err.message || 'An unknown error occurred while fetching seed details.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [qrCode]); // Refetch data when the qrCode changes
+
+  // Filter data for display, excluding 'N/A' and empty strings
+  const filteredDetails = Object.entries(seedDetails || {}).filter(([key, value]) => {
+    return value !== undefined && value !== null && value !== '' && value !== 'N/A';
   });
 
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[200px] p-8">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -61,7 +71,7 @@ const QRDetailsContent = () => {
           <AlertDescription>{error || 'An unknown error occurred while fetching seed details.'}</AlertDescription>
         </Alert>
         <div className="flex justify-center mt-4">
-           <Button variant="outline" onClick={() => navigate('/scan-qr')}>
+          <Button variant="outline" onClick={() => navigate('/scan-qr')}>
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Scan
           </Button>
         </div>
@@ -69,23 +79,24 @@ const QRDetailsContent = () => {
     );
   }
 
-    // Placeholder for handling case where data is null after loading (e.g., QR not found)
-    if (!data && !loading && !error && qrCode) {
-        return (
-             <div className="max-w-2xl mx-auto">
-                <Alert variant="destructive">
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>Seed Details Not Found</AlertTitle>
-                    <AlertDescription>No seed details found for QR code: '{qrCode}'. Please scan again or check the data source.</AlertDescription>
-                </Alert>
-                <div className="flex justify-center mt-4">
-                   <Button variant="outline" onClick={() => navigate('/scan-qr')}>
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Scan
-                  </Button>
-                </div>
-            </div>
-        );
-    }
+  // Placeholder for handling case where data is null after loading (e.g., QR not found) - This is now handled by the error state
+  // if (!seedDetails && !isLoading && !error && qrCode) {
+  //     return (
+  //          <div className="max-w-2xl mx-auto">
+  //             <Alert variant="destructive">
+  //                 <Info className="h-4 w-4" />
+  //                 <AlertTitle>Seed Details Not Found</AlertTitle>
+  //                 <AlertDescription>No seed details found for QR code: '{qrCode}'. Please scan again or check the data source.</AlertDescription>
+  //             </Alert>
+  //             <div className="flex justify-center mt-4">
+  //                <Button variant="outline" onClick={() => navigate('/scan-qr')}>
+  //                 <ArrowLeft className="mr-2 h-4 w-4" /> Back to Scan
+  //               </Button>
+  //             </div>
+  //         </div>
+  //     );
+  // }
+
 
   return (
     <Card className="shadow-xl">
@@ -93,22 +104,22 @@ const QRDetailsContent = () => {
         {/* Card Header */}
         <div className="flex items-start justify-between pb-2 border-b">
           <div>
-            <h2 className="text-2xl font-bold text-primary">Seed Details: {seedDetails.Crop} - {seedDetails.Variety}</h2>
+            <h2 className="text-2xl font-bold text-primary">Seed Details: {seedDetails?.Crop} - {seedDetails?.Variety}</h2>
           </div>
           <Button variant="outline" size="icon" onClick={() => navigate('/scan-qr')} aria-label="Back to Scan QR">
-             <ArrowLeft className="h-4 w-4" />
-             <span className="sr-only">Back to Scan QR</span>
-           </Button>
+            <ArrowLeft className="h-4 w-4" />
+            <span className="sr-only">Back to Scan QR</span>
+          </Button>
         </div>
 
         {/* Featured Information Section */}
         <div className="bg-muted/50 rounded-lg p-6 mt-6 flex flex-col sm:flex-row items-center sm:items-start gap-6">
-          {/* Image Display */}
+          {/* Image Display Placeholder */}
           <div className="flex-shrink-0">
             {/* Placeholder Image */}
             <div className="h-[150px] w-[150px] rounded-md border shadow-md bg-gray-200 flex items-center justify-center text-gray-500">
-                {/* Generic Placeholder */}
-                <span>No Image</span>
+              {/* Generic Placeholder */}
+              <span>No Image</span>
             </div>
           </div>
 
@@ -140,20 +151,20 @@ const QRDetailsContent = () => {
               ))}
             </tbody>
           </table>
-           {filteredDetails.length === 0 && (
-                <p className="text-center text-gray-500 mt-4">No detailed attributes found for this seed.</p>
-            )}
+          {filteredDetails.length === 0 && (
+            <p className="text-center text-gray-500 mt-4">No detailed attributes found for this seed.</p>
+          )}
         </div>
 
         {/* Action Section */}
-        {seedDetails['Seed ID'] !== 'N/A' && ( // Only show withdraw if Seed ID is available
-            <div className="flex justify-end mt-6">
+        {seedDetails?.CODE && ( // Only show withdraw if CODE (QR code) is available
+          <div className="flex justify-end mt-6">
             <Button asChild>
-                <Link to={`/seed-withdrawal/${seedDetails['Seed ID']}`}>
+              <a href={`/seed-withdrawal/${seedDetails.CODE}`}> {/* Use <a> for navigation outside React Router */}
                 Withdraw Seed
-                </Link>
+              </a>
             </Button>
-            </div>
+          </div>
         )}
       </div>
     </Card>
@@ -164,11 +175,11 @@ const ScanQRDetails = () => {
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
       <Suspense fallback={
-         <div className="flex flex-col items-center justify-center min-h-[200px] p-8">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="mt-4 text-lg text-center">Preparing QR details page...</p>
-            <p className="mt-1 text-muted-foreground text-center">Please wait a moment.</p>
-          </div>
+        <div className="flex flex-col items-center justify-center min-h-[200px] p-8">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="mt-4 text-lg text-center">Preparing QR details page...</p>
+          <p className="mt-1 text-muted-foreground text-center">Please wait a moment.</p>
+        </div>
       }>
         <QRDetailsContent />
       </Suspense>

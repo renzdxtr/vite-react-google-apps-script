@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { RotateCcw, X, TriangleAlert, Grid } from 'lucide-react';
-import QrScanner from 'react-qr-scanner';
+import QrScanner from 'react-qr-scanner'; // Assuming you have react-qr-scanner installed
 
 const ScanQR = () => {
   const navigate = useNavigate();
@@ -42,13 +42,13 @@ const ScanQR = () => {
 
 
   return (
-    <div className="container mx-auto px-4 py-8 flex flex-col items-center max-w-md">
+    <div className="container mx-auto px-4 py-8 flex flex-col items-center max-w-md space-y-6">
       <div className="text-center mb-6">
-        <h1 className="text-3xl font-bold text-primary">Scan QR Code</h1>
-        <p className="mt-2 text-lg text-foreground/80 text-center max-w-xs mx-auto">
+        <h1 className="text-3xl font-bold text-primary tracking-tight">Scan QR Code</h1>
+        <p className="mt-2 text-lg text-muted-foreground text-center max-w-xs mx-auto">
           Position the QR code within the camera frame
         </p>
-      </div>
+      </div> 
 
       <div className="w-full max-w-md min-h-[300px] bg-muted rounded-lg shadow-inner overflow-hidden">
         {isScanning && (
@@ -72,7 +72,7 @@ const ScanQR = () => {
       </div>
 
       {scanError && (
-        <Alert variant="destructive" className="w-full max-w-md mt-6">
+        <Alert variant="destructive" className="w-full max-w-md">
           <TriangleAlert className="h-4 w-4" />
           <AlertTitle>Scan Error</AlertTitle>
           <AlertDescription>
@@ -81,7 +81,7 @@ const ScanQR = () => {
         </Alert>
       )}
 
-      <div className="w-full max-w-md grid grid-cols-1 gap-4 mt-6">
+      <div className="w-full max-w-md grid grid-cols-1 gap-4">
         <Button
           onClick={handleRetry}
           variant="outline"
