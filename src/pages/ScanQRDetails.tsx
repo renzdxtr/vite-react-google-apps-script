@@ -99,6 +99,7 @@ const QRDetailsContent = () => {
 
 
   return (
+    // Overall Card with Shadow
     <Card className="shadow-xl">
       <div className="p-6">
         {/* Card Header */}
@@ -106,7 +107,7 @@ const QRDetailsContent = () => {
           <div>
             <h2 className="text-2xl font-bold text-primary">Seed Details: {seedDetails?.Crop} - {seedDetails?.Variety}</h2>
           </div>
-          <Button variant="outline" size="icon" onClick={() => navigate('/scan-qr')} aria-label="Back to Scan QR">
+          <Button variant="outline" size="icon" onClick={() => navigate('/scan-qr')} aria-label="Back to Scan QR" className="flex-shrink-0">
             <ArrowLeft className="h-4 w-4" />
             <span className="sr-only">Back to Scan QR</span>
           </Button>
@@ -114,12 +115,13 @@ const QRDetailsContent = () => {
 
         {/* Featured Information Section */}
         <div className="bg-muted/50 rounded-lg p-6 mt-6 flex flex-col sm:flex-row items-center sm:items-start gap-6">
-          {/* Image Display Placeholder */}
+          {/* Image Display Placeholder - Conditional Rendering based on image URL would go here */}
           <div className="flex-shrink-0">
             {/* Placeholder Image */}
             <div className="h-[150px] w-[150px] rounded-md border shadow-md bg-gray-200 flex items-center justify-center text-gray-500">
               {/* Generic Placeholder */}
               <span>No Image</span>
+              {/* You would replace this with an <img> tag when you have image URLs */}
             </div>
           </div>
 
@@ -131,7 +133,7 @@ const QRDetailsContent = () => {
         </div>
 
         {/* Content Description */}
-        <p className="mt-6 text-gray-700">Detailed information for the scanned seed lot retrieved from the system.</p>
+        <p className="mt-6 text-gray-700 text-center sm:text-left">Detailed information for the scanned seed lot retrieved from the system.</p>
 
         {/* Details Table */}
         <div className="overflow-x-auto mt-6">
@@ -158,7 +160,7 @@ const QRDetailsContent = () => {
 
         {/* Action Section */}
         {seedDetails?.CODE && ( // Only show withdraw if CODE (QR code) is available
-          <div className="flex justify-end mt-6">
+          <div className="flex justify-end mt-6 flex-wrap gap-4"> {/* Added gap and flex-wrap for responsiveness */}
             <Button asChild>
               <a href={`/seed-withdrawal/${seedDetails.CODE}`}> {/* Use <a> for navigation outside React Router */}
                 Withdraw Seed
