@@ -5,7 +5,7 @@ import Settings from "./pages/Settings";
 import Home from "./pages/Home";
 import Menu from "./pages/Menu"
 import ScanQR from "./pages/ScanQR";
-import ScanQRDetails from "./pages/ScanQRDetails";
+import SeedManagementPage from "./pages/SeedManagementPage";
 
 export const routes = [
   {
@@ -45,8 +45,8 @@ export const routes = [
     component: ScanQR,
   },
   {
-    title: "Scan QR Details",
+    title: "Seed Management",
     url: "/scan-qr/details",
-    component: ScanQRDetails,
+    component: SeedManagementPage,
   },
 ];

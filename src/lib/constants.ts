@@ -7,7 +7,7 @@ export const PAGE_TITLES: Record<string, string> = {
   '/menu': 'Menu',
   '/monitor-inventory': 'Monitor Inventory',
   '/scan-qr': 'Scan QR',
-  '/scan-qr/details': 'Seed Details',
+  '/scan-qr/details': 'Seed Management',
   '/seed-withdrawal': 'Seed Withdrawal',
   '/Tasks': 'Tasks',
 };
