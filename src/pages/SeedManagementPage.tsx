@@ -122,7 +122,7 @@ import { Suspense } from 'react';
         {/* Summary Information Display */}
         <Card className="shadow-md p-4 space-y-4">
           <CardHeader className="p-0">
-             <CardTitle className="text-xl font-semibold text-secondary">Seed Summary</CardTitle>
+             <CardTitle className="text-xl font-bold mb-4">Seed Summary</CardTitle>
           </CardHeader>
           <CardContent className="p-0 grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Top Section */}
@@ -203,7 +203,7 @@ import { Suspense } from 'react';
         {/* Collapsible Details Section */}
         <Card className="shadow-md">
            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-xl font-semibold text-secondary">Full Details</CardTitle>
+            <CardTitle className="text-xl font-bold mb-4">Full Details</CardTitle>
              <Button variant="ghost" onClick={() => setIsDetailsExpanded(!isDetailsExpanded)}>
                {isDetailsExpanded ? 'Hide Details' : 'View Details'}
              </Button>
@@ -257,7 +257,7 @@ import { Suspense } from 'react';
         {/* Withdraw Seed Volume Section */}
         <Card className="shadow-md p-4 space-y-4">
            <CardHeader className="p-0">
-             <CardTitle className="text-xl font-semibold text-secondary">Withdraw Seed Volume</CardTitle>
+             <CardTitle className="text-xl font-bold mb-4">Withdraw Seed Volume</CardTitle>
            </CardHeader>
            <CardContent className="p-0 space-y-4">
             <form onSubmit={handleWithdraw} className="space-y-4">
