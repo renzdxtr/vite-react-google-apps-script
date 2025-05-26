@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Info, ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
-import { fetchSeedDetailsByQrCode } from '@/lib/googleSheetsApi'; // Import the data fetching utility
+import { fetchSeedDetailsByQrCode, updateSeedVolume } from '@/lib/googleSheetsApi'; // Import the data fetching utility
 import { Suspense } from 'react';
 
 // Inner component to fetch and display data
@@ -26,6 +26,8 @@ const SeedManagementContent = () => {
 
   const [withdrawAmount, setWithdrawAmount] = useState<number | ''>('');
   const [withdrawReason, setWithdrawReason] = useState<string>('');
+
+  const [isWithdrawing, setIsWithdrawing] = useState(false); // New state for withdrawal loading
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,23 +59,40 @@ const SeedManagementContent = () => {
     fetchData();
   }, [qrCode]); // Refetch data when the qrCode changes
 
-  const handleWithdraw = (e: React.FormEvent) => {
+  const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
     if (withdrawAmount === '' || withdrawAmount <= 0) {
       setWithdrawalError("Please enter a valid withdrawal amount.");
       return;
     }
     const currentVolume = parseFloat(seedDetails?.VOLUME || '0');
-    if (withdrawAmount > currentVolume) {
+    if (withdrawAmount > currentVolume || currentVolume <= 0) { // Added check for non-positive current volume
       setWithdrawalError(`Withdrawal amount (${withdrawAmount}) exceeds available volume (${currentVolume}).`);
       return;
     }
 
-    setWithdrawalSuccess(null); // Clear previous success messages
-    setWithdrawalError(null); // Clear previous withdrawal errors
-    // TODO: Implement actual withdrawal logic (update Google Sheet via backend/serverless)
-    console.log(`Withdrawal successful: ${withdrawAmount} units for reason "${withdrawReason}"`);
-    // Update local state after successful withdrawal (requires backend to confirm actual new volume)
+    setIsWithdrawing(true); // Start loading state
+    try {
+      if (qrCode) { // Ensure qrCode exists before attempting withdrawal
+        const result = await updateSeedVolume(qrCode, withdrawAmount, withdrawReason);
+        if (result.success) {
+          setWithdrawalSuccess(`Successfully withdrew ${withdrawAmount} units.`);
+          setWithdrawalAmount(''); // Clear input fields on success
+          setWithdrawReason('');
+          // Optionally refetch data to show updated volume immediately
+          fetchData();
+        } else {
+          setWithdrawalError(result.message || 'Failed to withdraw seed volume.');
+        }
+      } else {
+        setWithdrawalError("QR code is missing, cannot process withdrawal.");
+      }
+    } catch (err: any) {
+      console.error("Error during withdrawal:", err);
+      setWithdrawalError(err.message || 'An unexpected error occurred during withdrawal.');
+    } finally {
+      setIsWithdrawing(false); // End loading state
+    }
   };
 
   // Effect to clear success message after a few seconds

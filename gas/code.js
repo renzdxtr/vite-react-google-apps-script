@@ -192,3 +192,176 @@ function fetchSeedDetailsByQrCode(qrCode) {
     throw error;
   }
 }
+
+function doPost(e) {
+  try {
+    const requestData = JSON.parse(e.postData.contents);
+    const { action, data } = requestData;
+    
+    switch (action) {
+      case 'updateSeedVolume':
+        return updateSeedVolume(data);
+      default:
+        throw new Error(`Unknown action: ${action}`);
+    }
+  } catch (error) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ error: error.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doPost(e) {
+  try {
+    const requestData = JSON.parse(e.postData.contents);
+    const { action, data } = requestData;
+    
+    switch (action) {
+      case 'updateSeedVolume':
+        return updateSeedVolume(data);
+      default:
+        throw new Error(`Unknown action: ${action}`);
+    }
+  } catch (error) {
+    console.error('doPost error:', error);
+    return ContentService
+      .createTextOutput(JSON.stringify({ error: error.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function updateSeedVolume(data) {
+  const { qrCode, withdrawalAmount, withdrawalReason, sheetId, formResponsesSheet, inventoryLogsSheet } = data;
+  
+  console.log('updateSeedVolume called with:', { qrCode, withdrawalAmount, withdrawalReason, sheetId, formResponsesSheet, inventoryLogsSheet });
+  
+  try {
+    // Validate input
+    if (!qrCode || !withdrawalAmount || !sheetId || !formResponsesSheet || !inventoryLogsSheet) {
+      throw new Error('Missing required parameters');
+    }
+    
+    if (withdrawalAmount <= 0) {
+      throw new Error('Withdrawal amount must be greater than 0');
+    }
+    
+    // Open the spreadsheet
+    const spreadsheet = SpreadsheetApp.openById(sheetId);
+    const formSheet = spreadsheet.getSheetByName(formResponsesSheet);
+    const logsSheet = spreadsheet.getSheetByName(inventoryLogsSheet);
+    
+    if (!formSheet) {
+      throw new Error(`Sheet "${formResponsesSheet}" not found`);
+    }
+    
+    if (!logsSheet) {
+      throw new Error(`Sheet "${inventoryLogsSheet}" not found`);
+    }
+    
+    // Get all data from form responses sheet
+    const formData = formSheet.getDataRange().getValues();
+    
+    if (formData.length === 0) {
+      throw new Error('Form responses sheet is empty');
+    }
+    
+    const headers = formData[0];
+    console.log('Headers found:', headers);
+    
+    // Find column indices - be more flexible with column names
+    const codeIndex = headers.findIndex(header => 
+      header && header.toString().toLowerCase().includes('code')
+    );
+    const volumeIndex = headers.findIndex(header => 
+      header && header.toString().toLowerCase().includes('volume')
+    );
+    const lastModifiedIndex = headers.findIndex(header => 
+      header && header.toString().toLowerCase().includes('last modified')
+    );
+    
+    console.log('Column indices:', { codeIndex, volumeIndex, lastModifiedIndex });
+    
+    if (codeIndex === -1) {
+      throw new Error('Code column not found. Available headers: ' + headers.join(', '));
+    }
+    
+    if (volumeIndex === -1) {
+      throw new Error('Volume column not found. Available headers: ' + headers.join(', '));
+    }
+    
+    // Find the row with matching QR code
+    let targetRowIndex = -1;
+    let currentVolume = 0;
+    
+    for (let i = 1; i < formData.length; i++) {
+      if (formData[i][codeIndex] && formData[i][codeIndex].toString() === qrCode.toString()) {
+        targetRowIndex = i + 1; // +1 because sheets are 1-indexed
+        const volumeValue = formData[i][volumeIndex];
+        currentVolume = parseFloat(volumeValue) || 0;
+        console.log('Found matching row:', i + 1, 'Current volume:', currentVolume);
+        break;
+      }
+    }
+    
+    if (targetRowIndex === -1) {
+      throw new Error(`QR code "${qrCode}" not found in the sheet`);
+    }
+    
+    // Calculate new volume
+    const newVolume = currentVolume - parseFloat(withdrawalAmount);
+    
+    if (newVolume < 0) {
+      throw new Error(`Insufficient volume for withdrawal. Current: ${currentVolume}, Requested: ${withdrawalAmount}`);
+    }
+    
+    // Update the volume in form responses sheet
+    formSheet.getRange(targetRowIndex, volumeIndex + 1).setValue(newVolume);
+    console.log('Updated volume from', currentVolume, 'to', newVolume);
+    
+    // Update last modified timestamp if column exists
+    if (lastModifiedIndex !== -1) {
+      formSheet.getRange(targetRowIndex, lastModifiedIndex + 1).setValue(new Date());
+      console.log('Updated last modified timestamp');
+    }
+    
+    // Ensure inventory logs sheet has headers
+    const logsData = logsSheet.getDataRange().getValues();
+    if (logsData.length === 0) {
+      // Add headers if sheet is empty
+      const logHeaders = ['Timestamp', 'QR Code', 'Action Type', 'Amount', 'Previous Volume', 'New Volume', 'Reason'];
+      logsSheet.getRange(1, 1, 1, logHeaders.length).setValues([logHeaders]);
+    }
+    
+    // Add log entry to inventory logs sheet
+    const logData = [
+      new Date(), // timestamp
+      qrCode,
+      'Withdrawal',
+      parseFloat(withdrawalAmount),
+      currentVolume,
+      newVolume,
+      withdrawalReason || 'No reason provided'
+    ];
+    
+    logsSheet.appendRow(logData);
+    console.log('Added log entry:', logData);
+    
+    return ContentService
+      .createTextOutput(JSON.stringify({ 
+        success: true, 
+        newVolume: newVolume,
+        previousVolume: currentVolume,
+        message: `Successfully withdrew ${withdrawalAmount} units. New volume: ${newVolume}`
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (error) {
+    console.error('updateSeedVolume error:', error);
+    return ContentService
+      .createTextOutput(JSON.stringify({ 
+        error: error.message,
+        success: false 
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
