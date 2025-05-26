@@ -1,6 +1,6 @@
 const GOOGLE_SHEETS_API_KEY = import.meta.env.VITE_GOOGLE_SHEETS_API_KEY;
 const GOOGLE_SHEETS_ID = import.meta.env.VITE_GOOGLE_SHEETS_ID;
-const SHEET_NAME = import.meta.env.VITE_SHEET_NAME;
+const FORM_RESPONSES_SHEET = import.meta.env.VITE_FORM_RESPONSES_SHEET;
 
 const COLUMN_NAMES = {
   TIMESTAMP: "Timestamp",
@@ -32,11 +32,11 @@ const COLUMN_NAMES = {
 };
 
 export const fetchSeedDetailsByQrCode = async (qrCode: string) => {
-  if (!GOOGLE_SHEETS_API_KEY || !GOOGLE_SHEETS_ID || !SHEET_NAME) {
+  if (!GOOGLE_SHEETS_API_KEY || !GOOGLE_SHEETS_ID || !FORM_RESPONSES_SHEET) {
     throw new Error("Google Sheets API credentials are not configured.");
   }
 
-  const range = `${SHEET_NAME}!A:Z`; // Adjust the range based on your actual data columns
+  const range = `${FORM_RESPONSES_SHEET}!A:Z`; // Adjust the range based on your actual data columns
 
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_SHEETS_ID}/values/${range}?key=${GOOGLE_SHEETS_API_KEY}`;
 
