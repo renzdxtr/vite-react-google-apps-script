@@ -63,12 +63,22 @@ export function updateSeedVolume(data) {
     return new Promise((resolve, reject) => {
       google.script.run
         .withSuccessHandler((res) => {
-          console.log("Seed volume updated:", res);
-          resolve(res);
+          // Ensure we always return an object with success property
+          const response = {
+            success: res?.success ?? false,
+            message: res?.message || 'Operation completed',
+            data: res
+          };
+          console.log("Seed volume updated:", response);
+          resolve(response);
         })
         .withFailureHandler((msg) => {
           console.error("Error updating seed volume:", msg);
-          reject(msg);
+          reject({
+            success: false,
+            message: msg || 'Failed to update seed volume',
+            error: msg
+          });
         })
         .updateSeedVolume(data);
     });
