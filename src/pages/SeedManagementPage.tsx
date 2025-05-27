@@ -216,6 +216,24 @@ const SeedManagementContent = () => {
           {/* <Button onClick={() => navigate('/menu')}>Back to Menu</Button> */}
         </div>
 
+        {/* Alert for Withdraw */}
+        {withdrawalSuccess && (
+          <Alert variant="success"> {/* Assuming you have a 'success' variant for Alert */}
+            <Info className="h-4 w-4" />
+            <AlertTitle>Withdrawal Successful</AlertTitle>
+            <AlertDescription>{withdrawalSuccess}</AlertDescription>
+          </Alert> 
+        )}
+
+        {/* Alert for Edit */}
+        {editSuccess && (
+          <Alert variant="success">
+            <Info className="h-4 w-4" />
+            <AlertTitle>Edit Successful</AlertTitle>
+            <AlertDescription>{editSuccess}</AlertDescription>
+          </Alert>
+        )}
+
         {/* Summary Information Display */}
         <Card className="shadow-md p-4 space-y-4">
           <CardHeader className="p-0">
@@ -297,6 +315,7 @@ const SeedManagementContent = () => {
             </div>
           </CardContent>
         </Card>
+
         {/* Collapsible Details Section */}
         <Card className="shadow-md">
           {/* Add edit/save buttons in the CardHeader */}
@@ -415,13 +434,7 @@ const SeedManagementContent = () => {
             )}
           </div>
         </Card>
-        {editSuccess && (
-          <Alert variant="success">
-            <Info className="h-4 w-4" />
-            <AlertTitle>Edit Successful</AlertTitle>
-            <AlertDescription>{editSuccess}</AlertDescription>
-          </Alert>
-        )}
+
         {/* Withdraw Seed Volume Section */}
         <Card className="shadow-md p-4 space-y-4">
           <CardHeader className="p-0">
@@ -461,13 +474,6 @@ const SeedManagementContent = () => {
                 </Alert>
               )}
               <Button type="submit" className="w-full">Withdraw</Button>
-
-              {withdrawalSuccess && (
-                <Alert variant="success"> {/* Assuming you have a 'success' variant for Alert */}
-                  <Info className="h-4 w-4" />
-                  <AlertTitle>Withdrawal Successful</AlertTitle>
-                  <AlertDescription>{withdrawalSuccess}</AlertDescription>
-                </Alert>)}
             </form>
           </CardContent>
         </Card>
