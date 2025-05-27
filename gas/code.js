@@ -212,142 +212,6 @@ function doPost(e) {
   }
 }
 
-// function updateSeedVolume(data) {
-//   const { qrCode, withdrawalAmount, withdrawalReason, sheetId, formResponsesSheet, inventoryLogsSheet } = data;
-  
-//   console.log('updateSeedVolume called with:', { qrCode, withdrawalAmount, withdrawalReason, sheetId, formResponsesSheet, inventoryLogsSheet });
-  
-//   try {
-//     // Validate input
-//     if (!qrCode || !withdrawalAmount || !sheetId || !formResponsesSheet || !inventoryLogsSheet) {
-//       throw new Error('Missing required parameters');
-//     }
-    
-//     if (withdrawalAmount <= 0) {
-//       throw new Error('Withdrawal amount must be greater than 0');
-//     }
-    
-//     // Open the spreadsheet
-//     const spreadsheet = SpreadsheetApp.openById(sheetId);
-//     const formSheet = spreadsheet.getSheetByName(formResponsesSheet);
-//     const logsSheet = spreadsheet.getSheetByName(inventoryLogsSheet);
-    
-//     if (!formSheet) {
-//       throw new Error(`Sheet "${formResponsesSheet}" not found`);
-//     }
-    
-//     if (!logsSheet) {
-//       throw new Error(`Sheet "${inventoryLogsSheet}" not found`);
-//     }
-    
-//     // Get all data from form responses sheet
-//     const formData = formSheet.getDataRange().getValues();
-    
-//     if (formData.length === 0) {
-//       throw new Error('Form responses sheet is empty');
-//     }
-    
-//     const headers = formData[0];
-//     console.log('Headers found:', headers);
-    
-//     // Find column indices - be more flexible with column names
-//     const codeIndex = headers.findIndex(header => 
-//       header && header.toString().toLowerCase().includes('code')
-//     );
-//     const volumeIndex = headers.findIndex(header => 
-//       header && header.toString().toLowerCase().includes('volume')
-//     );
-//     const lastModifiedIndex = headers.findIndex(header => 
-//       header && header.toString().toLowerCase().includes('last modified')
-//     );
-    
-//     console.log('Column indices:', { codeIndex, volumeIndex, lastModifiedIndex });
-    
-//     if (codeIndex === -1) {
-//       throw new Error('Code column not found. Available headers: ' + headers.join(', '));
-//     }
-    
-//     if (volumeIndex === -1) {
-//       throw new Error('Volume column not found. Available headers: ' + headers.join(', '));
-//     }
-    
-//     // Find the row with matching QR code
-//     let targetRowIndex = -1;
-//     let currentVolume = 0;
-    
-//     for (let i = 1; i < formData.length; i++) {
-//       if (formData[i][codeIndex] && formData[i][codeIndex].toString() === qrCode.toString()) {
-//         targetRowIndex = i + 1; // +1 because sheets are 1-indexed
-//         const volumeValue = formData[i][volumeIndex];
-//         currentVolume = parseFloat(volumeValue) || 0;
-//         console.log('Found matching row:', i + 1, 'Current volume:', currentVolume);
-//         break;
-//       }
-//     }
-    
-//     if (targetRowIndex === -1) {
-//       throw new Error(`QR code "${qrCode}" not found in the sheet`);
-//     }
-    
-//     // Calculate new volume
-//     const newVolume = currentVolume - parseFloat(withdrawalAmount);
-    
-//     if (newVolume < 0) {
-//       throw new Error(`Insufficient volume for withdrawal. Current: ${currentVolume}, Requested: ${withdrawalAmount}`);
-//     }
-    
-//     // Update the volume in form responses sheet
-//     formSheet.getRange(targetRowIndex, volumeIndex + 1).setValue(newVolume);
-//     console.log('Updated volume from', currentVolume, 'to', newVolume);
-    
-//     // Update last modified timestamp if column exists
-//     if (lastModifiedIndex !== -1) {
-//       formSheet.getRange(targetRowIndex, lastModifiedIndex + 1).setValue(new Date());
-//       console.log('Updated last modified timestamp');
-//     }
-    
-//     // Ensure inventory logs sheet has headers
-//     const logsData = logsSheet.getDataRange().getValues();
-//     if (logsData.length === 0) {
-//       // Add headers if sheet is empty
-//       const logHeaders = ['Timestamp', 'QR Code', 'Action Type', 'Amount', 'Previous Volume', 'New Volume', 'Reason'];
-//       logsSheet.getRange(1, 1, 1, logHeaders.length).setValues([logHeaders]);
-//     }
-    
-//     // Add log entry to inventory logs sheet
-//     const logData = [
-//       new Date(), // timestamp
-//       qrCode,
-//       'Withdrawal',
-//       parseFloat(withdrawalAmount),
-//       currentVolume,
-//       newVolume,
-//       withdrawalReason || 'No reason provided'
-//     ];
-    
-//     logsSheet.appendRow(logData);
-//     console.log('Added log entry:', logData);
-    
-//     return ContentService
-//       .createTextOutput(JSON.stringify({ 
-//         success: true, 
-//         newVolume: newVolume,
-//         previousVolume: currentVolume,
-//         message: `Successfully withdrew ${withdrawalAmount} units. New volume: ${newVolume}`
-//       }))
-//       .setMimeType(ContentService.MimeType.JSON);
-      
-//   } catch (error) {
-//     console.error('updateSeedVolume error:', error);
-//     return ContentService
-//       .createTextOutput(JSON.stringify({ 
-//         error: error.message,
-//         success: false 
-//       }))
-//       .setMimeType(ContentService.MimeType.JSON);
-//   }
-// }
-
 function updateSeedVolume(data) {
   try {
     const { qrCode, withdrawalAmount, withdrawalReason } = data;
@@ -427,6 +291,117 @@ function updateSeedVolume(data) {
     return {
       success: false,
       message: "Error updating seed volume: " + error.toString()
+    };
+  }
+}
+
+// Add FRS_COL_NAMES at the top of the file
+const FRS_COL_NAMES = {
+  TIMESTAMP: "Timestamp",
+  EMAIL: "Email Address",
+  NAME: "Name (Last Name, First Name, Middle Initial)",
+  CROP: "Crop",
+  VARIETY: "Variety",
+  LOT_NUMBER: "Lot Number",
+  BAG_NUMBER: "Bag Number",
+  HARVEST_DATE: "Date of Harvest",
+  STORED_DATE: "Date Stored",
+  VOLUME: "Volume Stored",
+  UNIT: "Unit",
+  GERMINATION_RATE: "Germination Rate (%)",
+  MOISTURE_CONTENT: "Moisture Content (%)",
+  SEED_CLASS: "Seed Class",
+  SEED_PHOTO: "Seed Photo",
+  CROP_PHOTO: "Standing Crop Photo",
+  PROGRAM: "Program",
+  REMARKS: "Remarks",
+  INVENTORY: "Inventory",
+  LOCATION: "Location",
+  ARCHIVED: "Archived",
+  LAST_MODIFIED: "Last Modified",
+  CODE: "Code",
+  QR_IMAGE: "QR Image",
+  QR_DOCUMENT: "QR Document"
+};
+
+function updateSeedDetails(data) {
+  try {
+    const { qrCode, oldData, newData } = data;
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const formSheet = ss.getSheetByName("Form Responses");
+    const logsSheet = ss.getSheetByName("Inventory Logs");
+    
+    // Find the row with matching QR code
+    const dataRange = formSheet.getDataRange();
+    const values = dataRange.getValues();
+    const headers = values[0];
+    
+    // Find the row with matching QR code
+    const qrCodeCol = headers.indexOf(FRS_COL_NAMES.CODE);
+    let rowIndex = -1;
+    
+    for (let i = 1; i < values.length; i++) {
+      if (values[i][qrCodeCol] === qrCode) {
+        rowIndex = i + 1;
+        break;
+      }
+    }
+    
+    if (rowIndex === -1) {
+      return {
+        success: false,
+        message: "QR code not found"
+      };
+    }
+
+    // Update each changed field
+    const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "M/d/yyyy HH:mm:ss");
+    const changedFields = {};
+
+    Object.entries(newData).forEach(([key, newValue]) => {
+      if (oldData[key] !== newValue) {
+        // Get the actual column name from FRS_COL_NAMES
+        const columnName = FRS_COL_NAMES[key];
+        const colIndex = headers.indexOf(columnName);
+        
+        if (colIndex !== -1) {
+          formSheet.getRange(rowIndex, colIndex + 1).setValue(newValue);
+          changedFields[key] = {
+            old: oldData[key],
+            new: newValue
+          };
+        }
+      }
+    });
+
+    // Update Last Modified
+    const lastModifiedCol = headers.indexOf(FRS_COL_NAMES.LAST_MODIFIED);
+    if (lastModifiedCol !== -1) {
+      formSheet.getRange(rowIndex, lastModifiedCol + 1).setValue(timestamp);
+    }
+
+    // Log the changes in Inventory Logs
+    logsSheet.appendRow([
+      timestamp,           // Timestamp
+      qrCode,             // QR Code
+      "Edit",             // Action Type
+      "",                 // Amount (empty for edits)
+      JSON.stringify(oldData), // Previous Value
+      JSON.stringify(newData), // New Value
+      "Edit Details"      // Reason
+    ]);
+
+    return {
+      success: true,
+      message: "Successfully updated seed details",
+      data: changedFields
+    };
+    
+  } catch (error) {
+    console.error("Error in updateSeedDetails:", error);
+    return {
+      success: false,
+      message: "Error updating seed details: " + error.toString()
     };
   }
 }

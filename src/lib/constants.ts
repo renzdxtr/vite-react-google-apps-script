@@ -20,3 +20,27 @@ export const MENU_ITEMS = [
   { label: 'Seed Withdrawal', href: '/seed-withdrawal' },
   { label: 'Tasks', href: '/Tasks' },
 ];
+
+export const NON_EDITABLE_FIELDS = [
+  'LAST_MODIFIED',
+  'EMAIL',
+  'TIMESTAMP',
+  'NAME',
+  'CODE',
+  'QR_IMAGE',
+  'QR_DOCUMENT',
+  'STATUS',
+  'UNIT'
+] as const;
+
+export const NON_REQUIRED_FIELDS = [
+  'GERMINATION_RATE',
+  'MOISTURE_CONTENT',
+  'HARVEST_DATE',
+  'BAG_NUMBER'
+] as const;
+
+export const DATE_FIELDS = [
+  'HARVEST_DATE',
+  'STORED_DATE'
+] as const;

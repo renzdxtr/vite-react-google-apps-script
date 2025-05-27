@@ -86,3 +86,35 @@ export function updateSeedVolume(data) {
   // Return mock response for development
   return mockUpdateSeedVolume(data);
 }
+
+export function updateSeedDetails(data) {
+  if (isGoogleAppsScript) {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler((res) => {
+          const response = {
+            success: res?.success ?? false,
+            message: res?.message || 'Operation completed',
+            data: res
+          };
+          console.log("Seed details updated:", response);
+          resolve(response);
+        })
+        .withFailureHandler((msg) => {
+          console.error("Error updating seed details:", msg);
+          reject({
+            success: false,
+            message: msg || 'Failed to update seed details',
+            error: msg
+          });
+        })
+        .updateSeedDetails(data);
+    });
+  }
+  // Return mock response for development
+  return Promise.resolve({
+    success: true,
+    message: 'Mock update successful',
+    data: data
+  });
+}
