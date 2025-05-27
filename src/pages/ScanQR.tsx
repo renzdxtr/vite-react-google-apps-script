@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, X, TriangleAlert, Grid } from 'lucide-react';
+import { RotateCcw, X, TriangleAlert, Grid, Camera } from 'lucide-react';
 import QrScanner from 'react-qr-scanner'; // Assuming you have react-qr-scanner installed
 
 const ScanQR = () => {
@@ -10,6 +10,9 @@ const ScanQR = () => {
   const [scanResult, setScanResult] = useState('');
   const [scanError, setScanError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+
+  const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
+  const [currentCamera, setCurrentCamera] = useState<string>('');
 
   const handleScan = (data: { text: string } | null) => {
     if (data) {
@@ -40,39 +43,90 @@ const ScanQR = () => {
     setIsScanning(true);
   }
 
+  // Get available cameras
+  useEffect(() => {
+    const getCameras = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        setCameras(videoDevices);
+        
+        // Default to back camera if available
+        const backCamera = videoDevices.find(device => 
+          device.label.toLowerCase().includes('back') || 
+          device.label.toLowerCase().includes('rear')
+        );
+        setCurrentCamera(backCamera?.deviceId || videoDevices[0]?.deviceId || '');
+      } catch (err) {
+        console.error('Error getting cameras:', err);
+        setScanError('Unable to access camera');
+      }
+    };
+
+    getCameras();
+  }, []);
+
+  // Scanner configuration
+  const constraints = {
+    video: {
+      deviceId: currentCamera ? { exact: currentCamera } : undefined,
+    }
+  };
+
+  // Switch camera handler
+  const handleSwitchCamera = () => {
+    const currentIndex = cameras.findIndex(cam => cam.deviceId === currentCamera);
+    const nextIndex = (currentIndex + 1) % cameras.length;
+    setCurrentCamera(cameras[nextIndex].deviceId);
+  };
+
 
   return (
-    <div className="container mx-auto px-4 py-8 flex flex-col items-center max-w-md space-y-6">
-      <div className="text-center mb-6">
-        <h1 className="text-3xl font-bold text-primary tracking-tight">Scan QR Code</h1>
-        <p className="mt-2 text-lg text-muted-foreground text-center max-w-xs mx-auto">
+    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 flex flex-col items-center max-w-md space-y-4 sm:space-y-6">
+      <div className="text-center mb-4 sm:mb-6 w-full">
+        <h1 className="text-2xl sm:text-3xl font-bold text-primary tracking-tight">Scan QR Code</h1>
+        <p className="mt-2 text-base sm:text-lg text-muted-foreground text-center max-w-xs mx-auto">
           Position the QR code within the camera frame
         </p>
       </div> 
-
-      <div className="w-full max-w-md min-h-[300px] bg-muted rounded-lg shadow-inner overflow-hidden">
+    
+      <div className="w-full max-w-md min-h-[250px] sm:min-h-[300px] bg-muted rounded-lg shadow-inner overflow-hidden relative">
         {isScanning && (
-          <QrScanner
-            delay={300}
-            onError={handleError}
-            onScan={handleScan}
-            style={{ width: '100%' }}
-          />
+          <>
+            <QrScanner
+              delay={300}
+              onError={handleError}
+              onScan={handleScan}
+              style={{ width: '100%', height: '100%' }}
+              constraints={constraints}
+            />
+            {cameras.length > 1 && (
+              <Button
+                onClick={handleSwitchCamera}
+                variant="secondary"
+                size="sm"
+                className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 z-10"
+              >
+                <Camera className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Switch Camera</span>
+              </Button>
+            )}
+          </>
         )}
         {!isScanning && !scanError && scanResult && (
-           <div className="flex items-center justify-center h-full">
-             <p className="text-center text-green-600 font-semibold">Scan Successful!</p>
-           </div>
+          <div className="flex items-center justify-center h-full p-4">
+            <p className="text-center text-green-600 font-semibold text-base sm:text-lg">Scan Successful!</p>
+          </div>
         )}
-         {!isScanning && scanError && (
-           <div className="flex items-center justify-center h-full">
-             <p className="text-center text-red-600 font-semibold">Scan Failed: {scanError}</p>
-           </div>
+        {!isScanning && scanError && (
+          <div className="flex items-center justify-center h-full p-4">
+            <p className="text-center text-red-600 font-semibold text-base sm:text-lg">Scan Failed: {scanError}</p>
+          </div>
         )}
       </div>
-
+    
       {scanError && (
-        <Alert variant="destructive" className="w-full max-w-md">
+        <Alert variant="destructive" className="w-full max-w-md text-sm sm:text-base">
           <TriangleAlert className="h-4 w-4" />
           <AlertTitle>Scan Error</AlertTitle>
           <AlertDescription>
@@ -80,24 +134,24 @@ const ScanQR = () => {
           </AlertDescription>
         </Alert>
       )}
-
-      <div className="w-full max-w-md grid grid-cols-1 gap-4">
+    
+      <div className="w-full max-w-md grid grid-cols-1 gap-2 sm:gap-4 mt-2 sm:mt-4">
         <Button
           onClick={handleRetry}
           variant="outline"
           size="lg"
-          className="w-full shadow-md"
+          className="w-full shadow-md h-10 sm:h-12"
           disabled={isScanning && !scanError}
         >
-          <RotateCcw className="mr-2 h-5 w-5" />
+          <RotateCcw className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
           Retry Scan
         </Button>
         <Button
           onClick={handleClose}
           variant="ghost"
-          className="w-full pt-4"
+          className="w-full h-10 sm:h-12"
         >
-           <Grid className="mr-2 h-5 w-5" />
+          <Grid className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
           Back to Menu
         </Button>
       </div>
