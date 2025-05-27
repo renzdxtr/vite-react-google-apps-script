@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Info, ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
-import { fetchSeedDetailsByQrCode, updateSeedVolume } from '@/lib/googleSheetsApi'; // Import the data fetching utility
+import { fetchSeedDetailsByQrCode, updateSeedVolume } from '@/server/gas'; // Import the data fetching utility
 import { Suspense } from 'react';
 
 // Inner component to fetch and display data
@@ -29,35 +29,36 @@ const SeedManagementContent = () => {
 
   const [isWithdrawing, setIsWithdrawing] = useState(false); // New state for withdrawal loading
 
+  // Define fetchData as a useCallback to avoid recreation on each render
+  const fetchData = useCallback(async () => {
+    if (!qrCode) {
+      setError("QR code not provided in the URL.");
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setSeedDetails(null);
+
+    try {
+      const details = await fetchSeedDetailsByQrCode(qrCode);
+      if (details) {
+        setSeedDetails(details);
+      } else {
+        setError(`No seed details found for QR code: '${qrCode}'. Please scan again or check the data source.`);
+      }
+    } catch (err: any) {
+      console.error("Error fetching seed details:", err);
+      setError(err.message || 'An unknown error occurred while fetching seed details.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [qrCode]);
+
   useEffect(() => {
-    const fetchData = async () => {
-      if (!qrCode) {
-        setError("QR code not provided in the URL.");
-        setIsLoading(false);
-        return;
-      }
-
-      setIsLoading(true);
-      setError(null);
-      setSeedDetails(null);
-
-      try {
-        const details = await fetchSeedDetailsByQrCode(qrCode);
-        if (details) {
-          setSeedDetails(details);
-        } else {
-          setError(`No seed details found for QR code: '${qrCode}'. Please scan again or check the data source.`);
-        }
-      } catch (err: any) {
-        console.error("Error fetching seed details:", err);
-        setError(err.message || 'An unknown error occurred while fetching seed details.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchData();
-  }, [qrCode]); // Refetch data when the qrCode changes
+  }, [fetchData]); // Use the callback as a dependency
 
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,15 +73,23 @@ const SeedManagementContent = () => {
     }
 
     setIsWithdrawing(true); // Start loading state
+    setWithdrawalError(null); // Clear previous errors
+    
     try {
       if (qrCode) { // Ensure qrCode exists before attempting withdrawal
-        const result = await updateSeedVolume(qrCode, withdrawAmount, withdrawReason);
+        // Use the gas.js updateSeedVolume function with the correct parameters
+        const result = await updateSeedVolume({
+          qrCode,
+          withdrawalAmount: withdrawAmount,
+          withdrawalReason: withdrawReason
+        });
+        
         if (result.success) {
           setWithdrawalSuccess(`Successfully withdrew ${withdrawAmount} units.`);
-          setWithdrawalAmount(''); // Clear input fields on success
+          setWithdrawAmount(''); // Clear input fields on success
           setWithdrawReason('');
-          // Optionally refetch data to show updated volume immediately
-          fetchData();
+          // Refetch data to show updated volume immediately
+          await fetchData();
         } else {
           setWithdrawalError(result.message || 'Failed to withdraw seed volume.');
         }
@@ -95,7 +104,7 @@ const SeedManagementContent = () => {
     }
   };
 
-  // Effect to clear success message after a few seconds
+  // Effect to clear success message after a few seconds - fixed to avoid duplicate timers
   useEffect(() => {
     if (withdrawalSuccess) {
       const timer = setTimeout(() => {

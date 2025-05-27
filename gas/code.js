@@ -205,24 +205,6 @@ function doPost(e) {
         throw new Error(`Unknown action: ${action}`);
     }
   } catch (error) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ error: error.message }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-function doPost(e) {
-  try {
-    const requestData = JSON.parse(e.postData.contents);
-    const { action, data } = requestData;
-    
-    switch (action) {
-      case 'updateSeedVolume':
-        return updateSeedVolume(data);
-      default:
-        throw new Error(`Unknown action: ${action}`);
-    }
-  } catch (error) {
     console.error('doPost error:', error);
     return ContentService
       .createTextOutput(JSON.stringify({ error: error.message }))
