@@ -8,6 +8,8 @@ import { fetchSeedDetailsByQrCode, updateSeedVolume, updateSeedDetails } from '@
 import { Suspense } from 'react';
 import { NON_EDITABLE_FIELDS, NON_REQUIRED_FIELDS, DATE_FIELDS } from '@/lib/constants';
 
+import { CustomAlert } from '@/components/ui/custom-alert';
+
 // Inner component to fetch and display data
 const SeedManagementContent = () => {
   // Define the mapping for fields to display in the summary
@@ -161,17 +163,6 @@ const SeedManagementContent = () => {
       return () => clearTimeout(timer); // Cleanup function to clear the timer
     }
 
-    const summaryDetails = Object.entries(seedDetails || {})
-      .filter(([key, value]) => summaryFields.includes(key) && value !== undefined && value !== null && value !== '' && value !== 'N/A')
-      .reduce((obj, [key, value]) => {
-        obj[key] = value;
-        return obj;
-      }, {} as Record<string, string>);
-
-    // // Filter all details for the collapsible section
-    // const allDetails = Object.entries(seedDetails || {})
-    //   .filter(([key, value]) => value !== undefined && value !== null && value !== '' && value !== 'N/A');
-
     const timer = setTimeout(() => {
       setWithdrawalSuccess(null);
     }, 5000); // Clear after 5 seconds
@@ -216,23 +207,21 @@ const SeedManagementContent = () => {
           {/* <Button onClick={() => navigate('/menu')}>Back to Menu</Button> */}
         </div>
 
-        {/* Alert for Withdraw */}
-        {withdrawalSuccess && (
-          <Alert variant="success"> {/* Assuming you have a 'success' variant for Alert */}
-            <Info className="h-4 w-4" />
-            <AlertTitle>Withdrawal Successful</AlertTitle>
-            <AlertDescription>{withdrawalSuccess}</AlertDescription>
-          </Alert> 
-        )}
-
-        {/* Alert for Edit */}
-        {editSuccess && (
-          <Alert variant="success">
-            <Info className="h-4 w-4" />
-            <AlertTitle>Edit Successful</AlertTitle>
-            <AlertDescription>{editSuccess}</AlertDescription>
-          </Alert>
-        )}
+        {/* Centralized Alerts */}
+        <CustomAlert
+          type="success"
+          title="Withdrawal Successful"
+          message={withdrawalSuccess}
+          show={!!withdrawalSuccess}
+          onDismiss={() => setWithdrawalSuccess(null)}
+        />
+        <CustomAlert
+          type="success"
+          title="Edit Successful"
+          message={editSuccess}
+          show={!!editSuccess}
+          onDismiss={() => setEditSuccess(null)}
+        />
 
         {/* Summary Information Display */}
         <Card className="shadow-md p-4 space-y-4">
@@ -435,6 +424,14 @@ const SeedManagementContent = () => {
           </div>
         </Card>
 
+        <CustomAlert
+          type="error"
+          title="Error"
+          message={withdrawalError}
+          show={!!withdrawalError}
+          onDismiss={() => setWithdrawalError(null)}
+        />
+
         {/* Withdraw Seed Volume Section */}
         <Card className="shadow-md p-4 space-y-4">
           <CardHeader className="p-0">
@@ -466,13 +463,6 @@ const SeedManagementContent = () => {
                   />
                 </div>
               </div>
-              {withdrawalError && (
-                <Alert variant="destructive">
-                  <Info className="h-4 w-4" />
-                  <AlertTitle>Withdrawal Error</AlertTitle>
-                  <AlertDescription>{withdrawalError}</AlertDescription>
-                </Alert>
-              )}
               <Button type="submit" className="w-full">Withdraw</Button>
             </form>
           </CardContent>
