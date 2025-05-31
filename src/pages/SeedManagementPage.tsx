@@ -274,7 +274,7 @@ export const SeedManagementContent: React.FC = () => {
   // ─── RENDER MAIN CONTENT ───────────────────────────────────────────────────────
   //
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl">
+    <div className="container mx-auto py-4 max-w-3xl">
       <Card className="shadow-xl p-6 space-y-6">
         {/* ─── Header & Alerts ─────────────────────────────────────────── */}
         <div className="flex items-center justify-between">
@@ -433,7 +433,16 @@ export const SeedManagementContent: React.FC = () => {
               )}
               <Button
                 variant="ghost"
-                onClick={() => setIsDetailsExpanded(!isDetailsExpanded)}
+                onClick={() => {
+                  setIsDetailsExpanded(!isDetailsExpanded);
+                  // Cancel editing when hiding details
+                  if (isDetailsExpanded) {
+                    setIsEditing(false);
+                    setEditedDetails({});
+                    setFieldErrors({});
+                    setHasUnsavedChanges(false);
+                  }
+                }}
                 className="transition-transform duration-300 ease-in-out"
               >
                 {isDetailsExpanded ? (

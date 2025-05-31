@@ -91,3 +91,9 @@ export const DETAIL_KEY_ORDER: string[] = [
   'REMARKS',
   'NAME'
 ];
+
+export const PIN_CODES = [
+  '1120',
+  '1931',
+  '3910'
+];
