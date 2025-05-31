@@ -4,11 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Info, ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
-import { fetchSeedDetailsByQrCode, updateSeedVolume, updateSeedDetails } from '@/server/gas'; // Import the data fetching utility
+import { fetchSeedDetailsByQrCode, updateSeedVolume, updateSeedDetails } from '@/server/gas';
 import { Suspense } from 'react';
 import { NON_EDITABLE_FIELDS, NON_REQUIRED_FIELDS, DATE_FIELDS } from '@/lib/constants';
 
 import { CustomAlert } from '@/components/ui/custom-alert';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
 // Inner component to fetch and display data
 const SeedManagementContent = () => {
@@ -24,13 +25,13 @@ const SeedManagementContent = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [withdrawalSuccess, setWithdrawalSuccess] = useState<string | null>(null); // State for withdrawal success message
-  const [withdrawalError, setWithdrawalError] = useState<string | null>(null); // Separate error state for withdrawal
+  const [withdrawalSuccess, setWithdrawalSuccess] = useState<string | null>(null);
+  const [withdrawalError, setWithdrawalError] = useState<string | null>(null);
 
   const [withdrawAmount, setWithdrawAmount] = useState<number | ''>('');
   const [withdrawReason, setWithdrawReason] = useState<string>('');
 
-  const [isWithdrawing, setIsWithdrawing] = useState(false); // New state for withdrawal loading
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
 
   // State for editing
   const [isEditing, setIsEditing] = useState(false);
@@ -38,6 +39,9 @@ const SeedManagementContent = () => {
 
   // Add new state for edit success
   const [editSuccess, setEditSuccess] = useState<string | null>(null);
+
+  // Add state for confirmation view
+  const [isConfirming, setIsConfirming] = useState(false);
 
   // Define fetchData as a useCallback to avoid recreation on each render
   const fetchData = useCallback(async () => {
@@ -68,26 +72,37 @@ const SeedManagementContent = () => {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]); // Use the callback as a dependency
+  }, [fetchData]);
 
-  const handleWithdraw = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Validation function
+  const validateWithdrawal = () => {
     if (withdrawAmount === '' || withdrawAmount <= 0) {
       setWithdrawalError("Please enter a valid withdrawal amount.");
-      return;
+      return false;
     }
     const currentVolume = parseFloat(seedDetails?.VOLUME || '0');
-    if (withdrawAmount > currentVolume || currentVolume <= 0) { // Added check for non-positive current volume
+    if (withdrawAmount > currentVolume || currentVolume <= 0) {
       setWithdrawalError(`Withdrawal amount (${withdrawAmount}) exceeds available volume (${currentVolume}).`);
-      return;
+      return false;
     }
+    return true;
+  };
 
-    setIsWithdrawing(true); // Start loading state
-    setWithdrawalError(null); // Clear previous errors
+  // Handle withdrawal form submission
+  const handleWithdrawSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validateWithdrawal()) {
+      setIsConfirming(true);
+    }
+  };
 
+  // Handle actual withdrawal after confirmation
+  const handleConfirmWithdraw = async () => {
+    setIsWithdrawing(true);
+    setWithdrawalError(null);
+    
     try {
-      if (qrCode) { // Ensure qrCode exists before attempting withdrawal
-        // Use the gas.js updateSeedVolume function with the correct parameters
+      if (qrCode) {
         const result = await updateSeedVolume({
           qrCode,
           withdrawalAmount: withdrawAmount,
@@ -96,25 +111,22 @@ const SeedManagementContent = () => {
 
         if (result.success) {
           setWithdrawalSuccess(`Successfully withdrew ${withdrawAmount} units.`);
-          setWithdrawAmount(''); // Clear input fields on success
+          setWithdrawAmount('');
           setWithdrawReason('');
-          // Refetch data to show updated volume immediately
+          setIsConfirming(false);
           await fetchData();
         } else {
           setWithdrawalError(result.message || 'Failed to withdraw seed volume.');
         }
-      } else {
-        setWithdrawalError("QR code is missing, cannot process withdrawal.");
       }
     } catch (err: any) {
-      console.error("Error during withdrawal:", err);
       setWithdrawalError(err.message || 'An unexpected error occurred during withdrawal.');
     } finally {
-      setIsWithdrawing(false); // End loading state
+      setIsWithdrawing(false);
     }
   };
 
-  // Add this function to handle edit changes
+  // Handle edit changes
   const handleEditChange = (key: string, value: string) => {
     setEditedDetails(prev => ({
       ...prev,
@@ -122,8 +134,7 @@ const SeedManagementContent = () => {
     }));
   };
 
-  // Add save function
-  // Modify handleSaveEdit function
+  // Handle save edit
   const handleSaveEdit = async () => {
     try {
       const response = await updateSeedDetails({
@@ -134,8 +145,8 @@ const SeedManagementContent = () => {
 
       if (response.success) {
         setIsEditing(false);
-        await fetchData(); // Refresh data
-        // Use the new edit success state
+        setEditedDetails({});
+        await fetchData();
         setEditSuccess("Details updated successfully");
       } else {
         setWithdrawalError(response.message || "Failed to update details");
@@ -145,6 +156,7 @@ const SeedManagementContent = () => {
     }
   };
 
+  // Effect for edit success message
   useEffect(() => {
     if (editSuccess) {
       const timer = setTimeout(() => {
@@ -154,19 +166,14 @@ const SeedManagementContent = () => {
     }
   }, [editSuccess]);
 
-  // Effect to clear success message after a few seconds - fixed to avoid duplicate timers
+  // Effect for withdrawal success message - FIXED: removed duplicate timer logic
   useEffect(() => {
     if (withdrawalSuccess) {
       const timer = setTimeout(() => {
         setWithdrawalSuccess(null);
-      }, 5000); // Clear after 5 seconds
-      return () => clearTimeout(timer); // Cleanup function to clear the timer
+      }, 5000);
+      return () => clearTimeout(timer);
     }
-
-    const timer = setTimeout(() => {
-      setWithdrawalSuccess(null);
-    }, 5000); // Clear after 5 seconds
-    return () => clearTimeout(timer);
   }, [withdrawalSuccess]);
 
   if (isLoading) {
@@ -197,14 +204,11 @@ const SeedManagementContent = () => {
   }
 
   return (
-    // Overall Card with Shadow
     <div className="container mx-auto px-4 py-8 max-w-3xl">
       <Card className="shadow-xl p-6 space-y-6">
         {/* Header Section */}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-primary">Seed Management</h1>
-          {/* Placeholder for header items - replace with your actual header component if needed */}
-          {/* <Button onClick={() => navigate('/menu')}>Back to Menu</Button> */}
         </div>
 
         {/* Centralized Alerts */}
@@ -307,7 +311,6 @@ const SeedManagementContent = () => {
 
         {/* Collapsible Details Section */}
         <Card className="shadow-md">
-          {/* Add edit/save buttons in the CardHeader */}
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-xl font-bold">Full Details</CardTitle>
             <div className="flex gap-2">
@@ -343,87 +346,84 @@ const SeedManagementContent = () => {
               </Button>
             </div>
           </CardHeader>
-          {/* Collapsible Content */}
-          {/* Use a div with height transition for smooth animation */}
-          <div className={`overflow-hidden transition-max-height duration-500 ease-in-out ${isDetailsExpanded ? 'max-h-1000' : 'max-h-0'}`}>
-            {isDetailsExpanded && (
-              <CardContent className="p-4 border-t border-gray-300 space-y-4">
-                {/* Details Table - Display all fields except image/document URLs */}
-                <div className="overflow-x-auto">
-                  <table className="w-full table-auto">
-                    <thead>
-                      <tr>
-                        <th className="w-[200px] text-left text-sm font-medium text-gray-500 uppercase tracking-wider pb-2">Attribute</th>
-                        <th className="text-left text-sm font-medium text-gray-500 uppercase tracking-wider pb-2">Value</th>
-                      </tr>
-                    </thead>
-                    {/* Filter all details for the collapsible section */}
-                    <tbody className="divide-y divide-gray-200">
-                      {Object.entries(seedDetails || {})
-                        .filter(([key, value]) =>
-                          value !== undefined &&
-                          value !== null &&
-                          value !== '' &&
-                          value !== 'N/A' &&
-                          !urlFields.includes(key)
-                        )
-                        .map(([key, value]) => (
-                          <tr key={key}>
-                            <td className="py-2 pr-4 text-sm font-medium text-gray-900">{key}</td>
-                            <td className="py-2 text-sm text-gray-700">
-                              {isEditing && !NON_EDITABLE_FIELDS.includes(key) ? (
-                                DATE_FIELDS.includes(key) ? (
-                                  <input
-                                    type="datetime-local"
-                                    value={editedDetails[key] || value}
-                                    onChange={(e) => handleEditChange(key, e.target.value)}
-                                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                  />
-                                ) : (
-                                  <input
-                                    type={key === 'GERMINATION_RATE' || key === 'MOISTURE_CONTENT' || key === 'VOLUME' ? 'number' : 'text'}
-                                    value={editedDetails[key] || value}
-                                    onChange={(e) => handleEditChange(key, e.target.value)}
-                                    required={!NON_REQUIRED_FIELDS.includes(key)}
-                                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                  />
-                                )
+          
+          {/* FIXED: Better collapsible implementation */}
+          {isDetailsExpanded && (
+            <CardContent className="p-4 border-t border-gray-300 space-y-4">
+              {/* Details Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full table-auto">
+                  <thead>
+                    <tr>
+                      <th className="w-[200px] text-left text-sm font-medium text-gray-500 uppercase tracking-wider pb-2">Attribute</th>
+                      <th className="text-left text-sm font-medium text-gray-500 uppercase tracking-wider pb-2">Value</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {Object.entries(seedDetails || {})
+                      .filter(([key, value]) =>
+                        value !== undefined &&
+                        value !== null &&
+                        value !== '' &&
+                        value !== 'N/A' &&
+                        !urlFields.includes(key)
+                      )
+                      .map(([key, value]) => (
+                        <tr key={key}>
+                          <td className="py-2 pr-4 text-sm font-medium text-gray-900">{key}</td>
+                          <td className="py-2 text-sm text-gray-700">
+                            {isEditing && !NON_EDITABLE_FIELDS.includes(key) ? (
+                              DATE_FIELDS.includes(key) ? (
+                                <input
+                                  type="datetime-local"
+                                  value={editedDetails[key] || value}
+                                  onChange={(e) => handleEditChange(key, e.target.value)}
+                                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                />
                               ) : (
-                                String(value)
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-                {/* Image and Document Links */}
-                <div className="text-sm font-medium text-gray-500 uppercase tracking-wider pb-2">
-                  Related Links
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-300">
-                  {urlFields.map(fieldKey => {
-                    const url = seedDetails?.[fieldKey];
-                    if (url && url !== 'N/A') {
-                      const buttonText = fieldKey.replace(/_/g, ' ').replace('QR', 'QR '); // Format key for button text (e.g., SEED_PHOTO -> Seed Photo)
-                      return (
-                        <Button key={fieldKey} asChild variant="secondary" size="sm">
-                          <a href={url} target="_blank" rel="noopener noreferrer">
-                            {buttonText}
-                          </a>
-                        </Button>
-                      );
-                    }
-                    return null;
-                  })}
-                </div>
-                {/* TODO: Add Edit button functionality */}
-                {/* <Button variant="secondary" className="mt-4">Edit Details</Button> */}
-              </CardContent>
-            )}
-          </div>
+                                <input
+                                  type={key === 'GERMINATION_RATE' || key === 'MOISTURE_CONTENT' || key === 'VOLUME' ? 'number' : 'text'}
+                                  value={editedDetails[key] || value}
+                                  onChange={(e) => handleEditChange(key, e.target.value)}
+                                  required={!NON_REQUIRED_FIELDS.includes(key)}
+                                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                />
+                              )
+                            ) : (
+                              String(value)
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Image and Document Links */}
+              <div className="text-sm font-medium text-gray-500 uppercase tracking-wider pb-2">
+                Related Links
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-300">
+                {urlFields.map(fieldKey => {
+                  const url = seedDetails?.[fieldKey];
+                  if (url && url !== 'N/A') {
+                    const buttonText = fieldKey.replace(/_/g, ' ').replace('QR', 'QR ');
+                    return (
+                      <Button key={fieldKey} asChild variant="secondary" size="sm">
+                        <a href={url} target="_blank" rel="noopener noreferrer">
+                          {buttonText}
+                        </a>
+                      </Button>
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+            </CardContent>
+          )}
         </Card>
 
+        {/* Withdrawal Error above the card for easier viewing */}
         <CustomAlert
           type="error"
           title="Error"
@@ -435,41 +435,85 @@ const SeedManagementContent = () => {
         {/* Withdraw Seed Volume Section */}
         <Card className="shadow-md p-4 space-y-4">
           <CardHeader className="p-0">
-            <CardTitle className="text-xl font-bold mb-4">Withdraw Seed Volume</CardTitle>
+            <CardTitle className="text-xl font-bold mb-4">
+              {isConfirming ? 'Confirm Withdrawal' : 'Withdraw Seed Volume'}
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <form onSubmit={handleWithdraw} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="withdrawAmount" className="block text-sm font-medium text-gray-700">Enter Amount:</label>
-                  <input
-                    type="number"
-                    id="withdrawAmount"
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                    value={withdrawAmount}
-                    onChange={(e) => setWithdrawAmount(parseFloat(e.target.value))}
-                    min="0"
-                    step="any"
-                  />
+            {isConfirming ? (
+              <div className="space-y-4">
+                <div className="space-y-2 bg-muted p-4 rounded-md">
+                  <div className="flex justify-between">
+                    <span>Current Volume:</span>
+                    <span className="font-semibold">{seedDetails?.VOLUME} {seedDetails?.UNIT}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Withdrawal Amount:</span>
+                    <span className="font-semibold">{withdrawAmount} {seedDetails?.UNIT}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Remaining Volume:</span>
+                    <span className="font-semibold">
+                      {parseFloat(seedDetails?.VOLUME || '0') - Number(withdrawAmount)} {seedDetails?.UNIT}
+                    </span>
+                  </div>
+                  <div className="pt-2 border-t">
+                    <span className="text-sm text-muted-foreground">Reason: </span>
+                    <span className="text-sm">{withdrawReason}</span>
+                  </div>
                 </div>
-                <div>
-                  <label htmlFor="withdrawReason" className="block text-sm font-medium text-gray-700">Reason:</label>
-                  <input
-                    type="text"
-                    id="withdrawReason"
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                    value={withdrawReason}
-                    onChange={(e) => setWithdrawReason(e.target.value)}
-                  />
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setIsConfirming(false)}
+                    disabled={isWithdrawing}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={handleConfirmWithdraw}
+                    disabled={isWithdrawing}
+                  >
+                    {isWithdrawing ? 'Processing...' : 'Confirm Withdrawal'}
+                  </Button>
                 </div>
               </div>
-              <Button type="submit" className="w-full">Withdraw</Button>
-            </form>
+            ) : (
+              <form onSubmit={handleWithdrawSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="withdrawAmount" className="block text-sm font-medium text-gray-700">Enter Amount:</label>
+                    <input
+                      type="number"
+                      id="withdrawAmount"
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                      value={withdrawAmount}
+                      onChange={(e) => setWithdrawAmount(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                      min="0"
+                      step="any"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="withdrawReason" className="block text-sm font-medium text-gray-700">Reason:</label>
+                    <input
+                      type="text"
+                      id="withdrawReason"
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                      value={withdrawReason}
+                      onChange={(e) => setWithdrawReason(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <Button type="submit" className="w-full">Withdraw</Button>
+              </form>
+            )}
           </CardContent>
         </Card>
-        {/* Action Section - Back button moved to Header or considered part of main layout */}
       </Card>
-      {/* Back to Scan button outside the main card */}
+      
+      {/* Back to Scan button */}
       <div className="flex justify-center mt-6">
         <Button variant="outline" onClick={() => navigate('/scan-qr')}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to Scan
@@ -479,10 +523,8 @@ const SeedManagementContent = () => {
   );
 };
 
-// This was the missing closing brace for QRDetailsContent, now part of SeedManagementContent
 const SeedManagementPage = () => {
   return (
-    // Suspense remains outside for lazy loading the content component
     <Suspense fallback={
       <div className="flex flex-col items-center justify-center min-h-[200px] p-8">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
