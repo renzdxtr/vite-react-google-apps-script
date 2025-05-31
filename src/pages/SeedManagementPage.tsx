@@ -26,6 +26,8 @@ import { CustomAlert } from '@/components/ui/custom-alert';
 import { useSeedDetails, SeedDetails as SeedDetailsType } from '@/hooks/useSeedDetails';
 import { SeedDetailsTable } from '@/components/SeedDetailsTable';
 
+import { PIN_CODES } from '@/lib/constants';
+
 /**
  * validateField: coerce any rawValue → string, then run:
  *  1) Required‐field check (string.trim() === '')
@@ -84,6 +86,12 @@ export const SeedManagementContent: React.FC = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
   const [editSuccess, setEditSuccess] = useState<string | null>(null);
 
+  // ─── Pin when Editing state ─────────────────────────────────────────────────────────
+  const [isPinVerifying, setIsPinVerifying] = useState<boolean>(false);
+  const [pin, setPin] = useState<string>('');
+  const [pinError, setPinError] = useState<string | null>(null);
+  const [pinAttempts, setPinAttempts] = useState<number>(0);
+
   //
   // ─── VALIDATE & HANDLE WITHDRAWAL ───────────────────────────────────────────
   //
@@ -141,6 +149,32 @@ export const SeedManagementContent: React.FC = () => {
     }
   };
 
+  // Add this function to your component
+  const handlePinSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setPinError(null);
+
+    if (PIN_CODES.includes(pin)) {
+      setPin('');
+      setPinError(null);
+      setPinAttempts(0);
+      setIsPinVerifying(false);
+      setIsEditing(true);
+    } else {
+      const newAttempts = pinAttempts + 1;
+      setPinAttempts(newAttempts);
+      setPinError(`Invalid PIN. ${newAttempts >= 3 ? 'Please contact an administrator.' : ''}`);
+      if (newAttempts >= 5) {
+        setTimeout(() => {
+          setIsPinVerifying(false);
+          setPin('');
+          setPinError(null);
+          setPinAttempts(0);
+        }, 2000);
+      }
+    }
+  };
+
   useEffect(() => {
     if (withdrawalSuccess) {
       const timer = setTimeout(() => setWithdrawalSuccess(null), 5000);
@@ -162,10 +196,19 @@ export const SeedManagementContent: React.FC = () => {
   };
 
   const handleEditChange = (key: string, value: string) => {
-    setEditedDetails((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+    // Special handling for VOLUME to ensure precise number handling
+    if (key === 'VOLUME') {
+      // Ensure we're storing the exact string value without any manipulation
+      setEditedDetails((prev) => ({
+        ...prev,
+        [key]: value.trim(),
+      }));
+    } else {
+      setEditedDetails((prev) => ({
+        ...prev,
+        [key]: value,
+      }));
+    }
 
     // Real‐time validation
     const errorMsg = validateField(key, value);
@@ -188,7 +231,7 @@ export const SeedManagementContent: React.FC = () => {
       if (errMsg) errors[key] = errMsg;
     });
 
-    // 2) Validate required original fields that weren’t edited
+    // 2) Validate required original fields that weren't edited
     if (seedDetails) {
       Object.keys(seedDetails).forEach((key) => {
         if (
@@ -206,6 +249,12 @@ export const SeedManagementContent: React.FC = () => {
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       return;
+    }
+
+    // Debug what's being sent to the server
+    console.log('Edited details before sending:', editedDetails);
+    if (editedDetails.VOLUME) {
+      console.log('VOLUME type:', typeof editedDetails.VOLUME, 'Value:', editedDetails.VOLUME);
     }
 
     // 3) Call updateSeedDetails
@@ -426,7 +475,7 @@ export const SeedManagementContent: React.FC = () => {
                     </Button>
                   </>
                 ) : (
-                  <Button variant="ghost" onClick={() => setIsEditing(true)}>
+                  <Button variant="ghost" onClick={() => setIsPinVerifying(true)}>
                     <Edit className="h-4 w-4" />
                   </Button>
                 )
@@ -517,6 +566,61 @@ export const SeedManagementContent: React.FC = () => {
             </CardContent>
           )}
         </Card>
+
+        {isPinVerifying && (
+          <Card className="shadow-md p-4 space-y-4">
+            <CardHeader className="p-0">
+              <CardTitle className="text-xl font-bold mb-4">
+                Authorization Required
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <form onSubmit={handlePinSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Please enter your PIN to edit seed details.
+                  </p>
+                  <input
+                    type="password"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm text-center text-lg tracking-widest"
+                    value={pin}
+                    onChange={(e) => {
+                      setPin(e.target.value);
+                      setPinError(null);
+                    }}
+                    placeholder="Enter PIN"
+                    maxLength={6}
+                    autoFocus
+                  />
+                  {pinError && (
+                    <p className="text-destructive text-sm">{pinError}</p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setIsPinVerifying(false);
+                      setPin('');
+                      setPinError(null);
+                      setPinAttempts(0);
+                    }}
+                    type="button"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    type="submit"
+                  >
+                    Verify
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        )}
 
         <CustomAlert
           type="error"
