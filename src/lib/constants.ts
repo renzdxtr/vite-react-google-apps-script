@@ -37,7 +37,8 @@ export const NON_REQUIRED_FIELDS = [
   'GERMINATION_RATE',
   'MOISTURE_CONTENT',
   'HARVEST_DATE',
-  'BAG_NUMBER'
+  'BAG_NUMBER',
+  'ARCHIVED'
 ] as const;
 
 export const DATE_FIELDS = [
