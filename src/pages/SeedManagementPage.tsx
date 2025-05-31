@@ -14,7 +14,13 @@ import {
 } from 'lucide-react';
 
 import { updateSeedVolume, updateSeedDetails } from '@/server/gas';
-import { NON_EDITABLE_FIELDS, NON_REQUIRED_FIELDS, DATE_FIELDS } from '@/lib/constants';
+import {
+  NON_EDITABLE_FIELDS,
+  NON_REQUIRED_FIELDS,
+  DATE_FIELDS,
+  DETAIL_KEY_ORDER,
+  SUMMARY_DETAILS,
+} from '@/lib/constants';
 import { CustomAlert } from '@/components/ui/custom-alert';
 
 import { useSeedDetails, SeedDetails as SeedDetailsType } from '@/hooks/useSeedDetails';
@@ -190,7 +196,7 @@ export const SeedManagementContent: React.FC = () => {
           !urlFields.includes(key) &&
           !(key in editedDetails)
         ) {
-          const rawValue = seedDetails[key];
+          const rawValue = (seedDetails as SeedDetailsType)[key];
           const errMsg = validateField(key, rawValue);
           if (errMsg) errors[key] = errMsg;
         }
@@ -290,71 +296,39 @@ export const SeedManagementContent: React.FC = () => {
           onDismiss={() => setEditSuccess(null)}
         />
 
-        {/* ─── Summary Information Display ──────────────────────────────── */}
+        {/* ─── Updated Seed Summary Card ──────────────────────────────── */}
         <Card className="shadow-md p-4 space-y-4">
           <CardHeader className="p-0">
             <CardTitle className="text-xl font-bold">Seed Summary</CardTitle>
           </CardHeader>
           <CardContent className="p-0 space-y-4">
-            <div className="col-span-full flex flex-col sm:flex-row gap-4">
-              {seedDetails?.CODE && (
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">QR Code:</p>
-                  <p className="font-mono font-semibold">{seedDetails.CODE}</p>
-                </div>
-              )}
-              {(seedDetails?.Crop || seedDetails?.Variety) && (
-                <div
-                  className={`flex-1 ${
-                    seedDetails?.CODE ? 'sm:border-l sm:pl-4 border-gray-300' : ''
-                  }`}
-                >
-                  <p className="text-sm text-muted-foreground">Crop | Variety:</p>
-                  <p className="font-semibold">
-                    {seedDetails.Crop}{' '}
-                    {seedDetails.Crop && seedDetails.Variety ? '|' : ''}{' '}
-                    {seedDetails.Variety}
-                  </p>
-                </div>
-              )}
-            </div>
-            {seedDetails?.Program && (
-              <div className="col-span-full">
-                <p className="text-sm text-muted-foreground">Program:</p>
-                <p className="font-semibold">{seedDetails.Program}</p>
+            {/* ─── Group 1: QR Code ──────────────────────────────────── */}
+            {seedDetails?.CODE && (
+              <div>
+                <p className="text-sm text-muted-foreground">QR Code:</p>
+                <p className="font-mono font-semibold">{seedDetails.CODE}</p>
               </div>
             )}
-            <div className="col-span-full pt-4 border-t border-gray-300 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {seedDetails?.LOT_NUMBER && (
+
+            {/* Separator */}
+            <div className="border-t border-gray-300 my-2" />
+
+            {/* ─── Group 2: Crop, Variety, Volume Stored ──────────────── */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {seedDetails?.CROP && (
                 <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Lot No.:</p>
-                  <p className="font-semibold">{seedDetails.LOT_NUMBER}</p>
+                  <p className="text-sm text-muted-foreground">Crop:</p>
+                  <p className="font-semibold">{seedDetails.CROP}</p>
                 </div>
               )}
-              {seedDetails?.STORED_DATE && (
-                <div
-                  className={`flex-1 ${
-                    seedDetails?.LOT_NUMBER ? 'sm:border-l sm:pl-4 border-gray-300' : ''
-                  }`}
-                >
-                  <p className="text-sm text-muted-foreground">Date Stored:</p>
-                  <p className="font-semibold">{seedDetails.STORED_DATE}</p>
-                </div>
-              )}
-            </div>
-            <div className="col-span-full grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {seedDetails?.BAG_NUMBER && (
+              {seedDetails?.VARIETY && (
                 <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Bag No.:</p>
-                  <p className="font-semibold">{seedDetails.BAG_NUMBER}</p>
+                  <p className="text-sm text-muted-foreground">Variety:</p>
+                  <p className="font-semibold">{seedDetails.VARIETY}</p>
                 </div>
               )}
               {(seedDetails?.VOLUME || seedDetails?.UNIT) && (
-                <div
-                  className={`flex-1 ${
-                    seedDetails?.BAG_NUMBER ? 'sm:border-l sm:pl-4 border-gray-300' : ''
-                  }`}
-                >
+                <div className="flex-1">
                   <p className="text-sm text-muted-foreground">Volume Stored:</p>
                   <p className="font-semibold">
                     {seedDetails.VOLUME} {seedDetails.UNIT}
@@ -362,33 +336,66 @@ export const SeedManagementContent: React.FC = () => {
                 </div>
               )}
             </div>
-            <div className="col-span-full pt-4 border-t border-gray-300 grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {seedDetails?.Seed_Class && (
+
+            {/* Separator */}
+            <div className="border-t border-gray-300 my-2" />
+
+            {/* ─── Group 3: Lot No., Bag No., Date Stored ─────────────── */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {seedDetails?.LOT_NUMBER && (
                 <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Seed Class:</p>
-                  <p className="font-semibold">{seedDetails.Seed_Class}</p>
+                  <p className="text-sm text-muted-foreground">Lot No.:</p>
+                  <p className="font-semibold">{seedDetails.LOT_NUMBER}</p>
                 </div>
               )}
+              {seedDetails?.BAG_NUMBER && (
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Bag No.:</p>
+                  <p className="font-semibold">{seedDetails.BAG_NUMBER}</p>
+                </div>
+              )}
+              {seedDetails?.STORED_DATE && (
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Date Stored:</p>
+                  <p className="font-semibold">{seedDetails.STORED_DATE}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Separator */}
+            <div className="border-t border-gray-300 my-2" />
+
+            {/* ─── Group 4: Germination Rate (%), Moisture Content (%) ─── */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {seedDetails?.GERMINATION_RATE && (
-                <div
-                  className={`flex-1 ${
-                    seedDetails?.Seed_Class ? 'sm:border-l sm:pl-4 border-gray-300' : ''
-                  }`}
-                >
+                <div className="flex-1">
                   <p className="text-sm text-muted-foreground">Germination Rate (%):</p>
                   <p className="font-semibold">{seedDetails.GERMINATION_RATE}%</p>
                 </div>
               )}
               {seedDetails?.MOISTURE_CONTENT && (
-                <div
-                  className={`flex-1 ${
-                    seedDetails?.Seed_Class || seedDetails?.GERMINATION_RATE
-                      ? 'sm:border-l sm:pl-4 border-gray-300'
-                      : ''
-                  }`}
-                >
+                <div className="flex-1">
                   <p className="text-sm text-muted-foreground">Moisture Content (%):</p>
                   <p className="font-semibold">{seedDetails.MOISTURE_CONTENT}%</p>
+                </div>
+              )}
+            </div>
+
+            {/* Separator */}
+            <div className="border-t border-gray-300 my-2" />
+
+            {/* ─── Group 5: Seed Class, Program ────────────────────────── */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {seedDetails?.SEED_CLASS && (
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Seed Class:</p>
+                  <p className="font-semibold">{seedDetails.SEED_CLASS}</p>
+                </div>
+              )}
+              {seedDetails?.PROGRAM && (
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Program:</p>
+                  <p className="font-semibold">{seedDetails.PROGRAM}</p>
                 </div>
               )}
             </div>
@@ -606,9 +613,7 @@ export const SeedManagementContent: React.FC = () => {
                     />
                   </div>
                 </div>
-                <Button type="submit" className="w-full">
-                  Withdraw
-                </Button>
+                <Button type="submit" className="w-full">Withdraw</Button>
               </form>
             )}
           </CardContent>

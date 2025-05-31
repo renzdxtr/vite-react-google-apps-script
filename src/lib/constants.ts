@@ -21,6 +21,7 @@ export const MENU_ITEMS = [
   { label: 'Tasks', href: '/Tasks' },
 ];
 
+// ─── Non‐editable fields in the “Full Details” table ───────────────────────
 export const NON_EDITABLE_FIELDS = [
   'LAST_MODIFIED',
   'EMAIL',
@@ -33,6 +34,7 @@ export const NON_EDITABLE_FIELDS = [
   'UNIT'
 ] as const;
 
+// ─── Fields that are not required (i.e., can be left blank without validation) ──
 export const NON_REQUIRED_FIELDS = [
   'GERMINATION_RATE',
   'MOISTURE_CONTENT',
@@ -41,7 +43,51 @@ export const NON_REQUIRED_FIELDS = [
   'ARCHIVED'
 ] as const;
 
+// ─── Fields treated as dates (rendered with <input type="datetime-local">) ───
 export const DATE_FIELDS = [
   'HARVEST_DATE',
   'STORED_DATE'
 ] as const;
+
+/**
+ * Fields to display in the Seed Summary Card.
+ * (We will render these in the specific grouped order shown below.)
+ */
+export const SUMMARY_DETAILS = [
+  'CODE',
+  'CROP',
+  'VARIETY',
+  'LOT_NUMBER',
+  'BAG_NUMBER',
+  'STORED_DATE',
+  'VOLUME',
+  'GERMINATION_RATE',
+  'MOISTURE_CONTENT',
+  'SEED_CLASS',
+  'PROGRAM',
+]
+
+/**
+ * Pre‐defined “preferred order” for keys in the seed details table.
+ * Keys listed here will appear first (in exactly this order).
+ * Any keys not included below will be appended afterward, alphabetically by key.
+ */
+export const DETAIL_KEY_ORDER: string[] = [
+  'CODE',
+  'CROP',
+  'INVENTORY',
+  'LOCATION',
+  'VARIETY',
+  'LOT_NUMBER',
+  'BAG_NUMBER',
+  'HARVEST_DATE',
+  'STORED_DATE',
+  'VOLUME',
+  'UNIT',
+  'GERMINATION_RATE',
+  'MOISTURE_CONTENT',
+  'SEED_CLASS',
+  'PROGRAM',
+  'REMARKS',
+  'NAME'
+];
