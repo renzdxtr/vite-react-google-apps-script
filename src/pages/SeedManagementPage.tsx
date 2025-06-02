@@ -44,10 +44,12 @@ function validateField(key: string, rawValue: unknown): string | null {
 
   // 2) Date‐field validation
   if (DATE_FIELDS.includes(key) && value.trim() !== '') {
-    const parsed = new Date(value);
-    if (isNaN(parsed.getTime())) {
-      return `${key.replace(/_/g, ' ')} must be a valid date (YYYY-MM-DDTHH:MM format)`;
+    // Accept MM/DD/YYYY format
+    const dateRegex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$/;
+    if (!dateRegex.test(value)) {
+      return `${key.replace(/_/g, ' ')} must be in MM/DD/YYYY format`;
     }
+    return null;
   }
 
   // 3) Numeric range for germination/moisture
@@ -191,7 +193,7 @@ export const SeedManagementContent: React.FC = () => {
 
   const getPlaceholder = (key: string): string => {
     if (NON_REQUIRED_FIELDS.includes(key)) return '';
-    if (DATE_FIELDS.includes(key)) return 'Required (YYYY-MM-DDTHH:MM)';
+    if (DATE_FIELDS.includes(key)) return 'Required (MM/DD/YYYY)';
     return `${key.replace(/_/g, ' ')} is required`;
   };
 
@@ -203,7 +205,17 @@ export const SeedManagementContent: React.FC = () => {
         ...prev,
         [key]: value.trim(),
       }));
-    } else {
+    }
+
+    else if (DATE_FIELDS.includes(key)) {
+      // Special handling for date fields to maintain MM/DD/YYYY format
+      setEditedDetails((prev) => ({
+        ...prev,
+        [key]: value,
+      }));
+    } 
+
+    else {
       setEditedDetails((prev) => ({
         ...prev,
         [key]: value,
@@ -251,10 +263,31 @@ export const SeedManagementContent: React.FC = () => {
       return;
     }
 
+    // Create a copy of editedDetails to ensure we don't modify the original state
+    const processedDetails = { ...editedDetails };
+    
+    // Process date fields to ensure they're in MM/DD/YYYY format without time component
+    Object.keys(processedDetails).forEach(key => {
+      if (DATE_FIELDS.includes(key) && processedDetails[key]) {
+        // If the date already has the correct format, keep it as is
+        const dateRegex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$/;
+        if (!dateRegex.test(processedDetails[key])) {
+          // Try to extract just the date part if it contains time
+          const dateObj = new Date(processedDetails[key]);
+          if (!isNaN(dateObj.getTime())) {
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const year = dateObj.getFullYear();
+            processedDetails[key] = `${month}/${day}/${year}`;
+          }
+        }
+      }
+    });
+    
     // Debug what's being sent to the server
-    console.log('Edited details before sending:', editedDetails);
-    if (editedDetails.VOLUME) {
-      console.log('VOLUME type:', typeof editedDetails.VOLUME, 'Value:', editedDetails.VOLUME);
+    console.log('Edited details before sending:', processedDetails);
+    if (processedDetails.VOLUME) {
+      console.log('VOLUME type:', typeof processedDetails.VOLUME, 'Value:', processedDetails.VOLUME);
     }
 
     // 3) Call updateSeedDetails
@@ -262,7 +295,7 @@ export const SeedManagementContent: React.FC = () => {
       const response = await updateSeedDetails({
         qrCode: (seedDetails as SeedDetailsType)?.CODE,
         oldData: seedDetails as SeedDetailsType,
-        newData: editedDetails,
+        newData: processedDetails,
       });
 
       if (response.success) {
@@ -278,6 +311,30 @@ export const SeedManagementContent: React.FC = () => {
     } catch (err: any) {
       setFieldErrors({ _global: err.message || 'Error updating details' });
     }
+  };
+
+  // Helper function to format dates consistently
+  const formatDate = (dateValue: any): string => {
+    if (!dateValue) return '';
+    
+    // If already in MM/DD/YYYY format, return as is
+    if (typeof dateValue === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateValue)) {
+      return dateValue;
+    }
+    
+    try {
+      const date = new Date(dateValue);
+      if (!isNaN(date.getTime())) {
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${month}/${day}/${year}`;
+      }
+    } catch (e) {
+      // Fall back to original value if date parsing fails
+    }
+    
+    return String(dateValue);
   };
 
   useEffect(() => {
@@ -406,7 +463,7 @@ export const SeedManagementContent: React.FC = () => {
               {seedDetails?.STORED_DATE && (
                 <div className="flex-1">
                   <p className="text-sm text-muted-foreground">Date Stored:</p>
-                  <p className="font-semibold">{seedDetails.STORED_DATE}</p>
+                  <p className="font-semibold">{formatDate(seedDetails.STORED_DATE)}</p>
                 </div>
               )}
             </div>

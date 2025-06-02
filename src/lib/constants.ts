@@ -97,3 +97,10 @@ export const PIN_CODES = [
   '1931',
   '3910'
 ];
+
+export const DROPDOWN_CHOICES = {
+  'INVENTORY': ['Seed Storage', 'Planting Materials'],
+  'SEED_CLASS': ['Breeder', 'Foundation', 'Registered', 'Certified', 'NA', 'Others'],
+  'LOCATION': ['Conventional', 'Organic', 'Plant Nursery'],
+  'PROGRAM': ['HVCDP', 'NCP', 'NOAP', 'NUPAP']
+}

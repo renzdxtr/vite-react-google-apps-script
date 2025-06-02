@@ -1,6 +1,6 @@
 // src/components/SeedDetailsTable.tsx
 import React from 'react';
-import { NON_EDITABLE_FIELDS, DATE_FIELDS, DETAIL_KEY_ORDER } from '@/lib/constants';
+import { NON_EDITABLE_FIELDS, DATE_FIELDS, DETAIL_KEY_ORDER, DROPDOWN_CHOICES } from '@/lib/constants';
 
 export interface SeedDetails {
   [key: string]: any;
@@ -76,20 +76,82 @@ export function SeedDetailsTable({
                 {isEditing && !NON_EDITABLE_FIELDS.includes(key) ? (
                   <div className="space-y-1">
                     {DATE_FIELDS.includes(key) ? (
-                      <input
-                        type="datetime-local"
-                        value={getDisplayValue(key, value)}
-                        onChange={(e) =>
-                          handleEditChange(key, e.target.value)
-                        }
-                        placeholder={getPlaceholder(key)}
-                        className={`w-full rounded-md border shadow-sm focus:border-primary focus:ring-primary sm:text-sm ${
-                          fieldErrors[key] ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                      />
+                      <div className="relative">
+                        <input
+                          type="date" 
+                          value={(() => {
+                            // Convert MM/DD/YYYY to YYYY-MM-DD for the date input
+                            const displayValue = getDisplayValue(key, value);
+                            if (displayValue && displayValue.includes('/')) {
+                              const [month, day, year] = displayValue.split('/');
+                              return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                            }
+                            return displayValue;
+                          })()}
+                          onChange={(e) => {
+                            // Convert YYYY-MM-DD to MM/DD/YYYY format
+                            const dateValue = e.target.value;
+                            if (dateValue) {
+                              const [year, month, day] = dateValue.split('-');
+                              const formattedDate = `${month}/${day}/${year}`;
+                              handleEditChange(key, formattedDate);
+                            } else {
+                              handleEditChange(key, '');
+                            }
+                          }}
+                          placeholder={getPlaceholder(key)}
+                          className={`w-full rounded-md border shadow-sm focus:border-primary focus:ring-primary sm:text-sm ${
+                            fieldErrors[key] ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                        />
+                        <small className="text-xs text-gray-500 mt-1 block">
+                          Current: {(() => {
+                            // Format date as MM/DD/YYYY
+                            if (value) {
+                              if (typeof value === 'string' && value.includes('/')) {
+                                return value; // Already in MM/DD/YYYY format
+                              }
+                              try {
+                                const date = new Date(value);
+                                if (!isNaN(date.getTime())) {
+                                  const month = String(date.getMonth() + 1).padStart(2, '0');
+                                  const day = String(date.getDate()).padStart(2, '0');
+                                  const year = date.getFullYear();
+                                  return `${month}/${day}/${year}`;
+                                }
+                              } catch (e) {
+                                // Fall back to original value if date parsing fails
+                              }
+                            }
+                            return value || 'None';
+                          })()} (Format: MM/DD/YYYY)
+                        </small>
+                      </div>
+                    ) : key in DROPDOWN_CHOICES ? (
+                      <div className="relative">
+                        <select
+                          value={getDisplayValue(key, value)}
+                          onChange={(e) => handleEditChange(key, e.target.value)}
+                          className={`w-full rounded-md border shadow-sm focus:border-primary focus:ring-primary sm:text-sm ${
+                            fieldErrors[key] ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                        >
+                          <option value="">-- Select {key.replace(/_/g, ' ')} --</option>
+                          {DROPDOWN_CHOICES[key as keyof typeof DROPDOWN_CHOICES].map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                        <small className="text-xs text-gray-500 mt-1 block">
+                          Current: {value || 'None'}
+                        </small>
+                      </div>
                     ) : (
                       <input
                         type={
+                          key === 'LOT_NUMBER' ||
+                          key === 'BAG_NUMBER' ||
                           key === 'GERMINATION_RATE' ||
                           key === 'MOISTURE_CONTENT' ||
                           key === 'VOLUME'
