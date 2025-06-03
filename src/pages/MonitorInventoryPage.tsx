@@ -6,6 +6,7 @@ import SeedStorageBarChart from "@/components/monitor-inventory/seed-storage/See
 import InventoryLocationChart from "@/components/monitor-inventory/seed-storage/InventoryByLocationPieChart";
 import InventoryProgramChart from "@/components/monitor-inventory/seed-storage/InventoryByProgramPieChart";
 import SeedClassBreakdownChart from "@/components/monitor-inventory/seed-storage/SeedClassBreakdownBarChart";
+import GerminationRateChart from "@/components/monitor-inventory/seed-storage/CropGerminationRateByLotMultipleLineChart";
 
 export default function MonitorInventoryPage() {
   return (
@@ -24,6 +25,7 @@ export default function MonitorInventoryPage() {
               <InventoryLocationChart />
               <InventoryProgramChart />
               <SeedClassBreakdownChart />
+              <GerminationRateChart />
               {/* Additional charts will be added here */}
             </div>
           </TabsContent>
