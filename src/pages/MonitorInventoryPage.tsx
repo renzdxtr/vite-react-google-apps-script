@@ -7,6 +7,7 @@ import InventoryLocationChart from "@/components/monitor-inventory/seed-storage/
 import InventoryProgramChart from "@/components/monitor-inventory/seed-storage/InventoryByProgramPieChart";
 import SeedClassBreakdownChart from "@/components/monitor-inventory/seed-storage/SeedClassBreakdownBarChart";
 import GerminationRateChart from "@/components/monitor-inventory/seed-storage/CropGerminationRateByLotMultipleLineChart";
+import SeedInventoryTable from "@/components/monitor-inventory/seed-storage/SeedInventoryTable";
 
 export default function MonitorInventoryPage() {
   return (
@@ -20,14 +21,20 @@ export default function MonitorInventoryPage() {
           
           {/* Seed Storage Tab */}
           <TabsContent value="seed-storage">
-            <div className="grid gap-4">
-              <SeedStorageBarChart />
-              <InventoryLocationChart />
-              <InventoryProgramChart />
-              <SeedClassBreakdownChart />
-              <GerminationRateChart />
-              {/* Additional charts will be added here */}
+            <div className="max-w-full overflow-x-auto">
+                <div className="grid gap-4">
+                    <SeedStorageBarChart />
+                    <InventoryLocationChart />
+                    <InventoryProgramChart />
+                    <SeedClassBreakdownChart />
+                    <GerminationRateChart />
+                </div>
+
+                <div className="mt-4">
+                    <SeedInventoryTable />
+                </div>
             </div>
+
           </TabsContent>
           
           {/* Planting Materials Tab */}
