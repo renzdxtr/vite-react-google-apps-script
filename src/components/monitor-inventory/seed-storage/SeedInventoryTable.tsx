@@ -29,8 +29,8 @@ const VERY_LOW_STOCK_THRESHOLD = 5_000 // grams
 // Pagination options
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
 
-// Current date from context
-const CURRENT_DATE = new Date("06/03/2025")
+// Get current date dynamically
+const CURRENT_DATE = new Date()
 
 // Process inventory data and calculate days stored
 const processInventoryData = () => {
