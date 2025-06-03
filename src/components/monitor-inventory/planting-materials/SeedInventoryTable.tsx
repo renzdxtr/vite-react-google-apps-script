@@ -18,7 +18,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { SAMPLE_DATA_INVENTORY } from "@/lib/constants";
+import { PLANTING_MATERIALS } from "@/lib/constants";
 
 // Global thresholds - easily configurable
 const LOW_STOCK_THRESHOLD = 10_000 // grams
@@ -34,7 +34,7 @@ const CURRENT_DATE = new Date()
 
 // Process inventory data and calculate days stored
 const processInventoryData = () => {
-  return SAMPLE_DATA_INVENTORY.map((item) => {
+  return PLANTING_MATERIALS.map((item) => {
     const storedDate = new Date(item.STORED_DATE)
     const daysDiff = Math.floor((CURRENT_DATE.getTime() - storedDate.getTime()) / (1000 * 60 * 60 * 24))
 
@@ -52,7 +52,7 @@ const processInventoryData = () => {
   })
 }
 
-export default function SeedInventoryTable() {
+export default function PM_SeedInventoryTable() {
   const [inventoryData, setInventoryData] = React.useState(processInventoryData())
   const [searchQuery, setSearchQuery] = React.useState("")
   const [selectedRowIndex, setSelectedRowIndex] = React.useState<number | null>(null)
@@ -206,7 +206,7 @@ export default function SeedInventoryTable() {
       <Card className="w-full">
         <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
           <div className="grid flex-1 gap-1 text-center sm:text-left">
-            <CardTitle>Seed Storage - Inventory</CardTitle>
+            <CardTitle>Planting Materials - Inventory</CardTitle>
             <CardDescription>Loading inventory data...</CardDescription>
           </div>
         </CardHeader>
@@ -223,9 +223,9 @@ export default function SeedInventoryTable() {
     <Card className="w-full">
       <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
         <div className="grid flex-1 gap-1 text-center sm:text-left">
-          <CardTitle>Seed Storage - Inventory</CardTitle>
+          <CardTitle>Planting Materials - Inventory</CardTitle>
           <CardDescription>
-            Track seed storage, aging inventory, and stock levels
+            Track planting materials, aging inventory, and stock levels
             {searchQuery && ` - Filtered by "${searchQuery}"`}
           </CardDescription>
         </div>
@@ -344,7 +344,7 @@ export default function SeedInventoryTable() {
                       <TableCell className="py-2 sm:py-3 text-xs sm:text-sm">{formatDate(item.dateStored)}</TableCell>
                       <TableCell className="text-right py-2 sm:py-3">
                         <span className={clsx("text-xs sm:text-sm font-medium", status.isLowStock && "text-rose-600")}>
-                          {item.quantityLeft}g
+                          {item.quantityLeft}pcs
                         </span>
                       </TableCell>
                       <TableCell className="py-2 sm:py-3">
@@ -367,13 +367,13 @@ export default function SeedInventoryTable() {
                       <span>
                         Page Total:{" "}
                         <strong>
-                          {currentPageData.reduce((sum, item) => sum + item.quantityLeft, 0).toLocaleString()}g
+                          {currentPageData.reduce((sum, item) => sum + item.quantityLeft, 0).toLocaleString()}pcs
                         </strong>
                       </span>
                       <span>
                         Grand Total:{" "}
                         <strong>
-                          {sortedData.reduce((sum, item) => sum + item.quantityLeft, 0).toLocaleString()}g
+                          {sortedData.reduce((sum, item) => sum + item.quantityLeft, 0).toLocaleString()}pcs
                         </strong>
                       </span>
                     </div>

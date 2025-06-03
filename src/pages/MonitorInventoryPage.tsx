@@ -9,6 +9,13 @@ import SeedClassBreakdownChart from "@/components/monitor-inventory/seed-storage
 import GerminationRateChart from "@/components/monitor-inventory/seed-storage/CropGerminationRateByLotMultipleLineChart";
 import SeedInventoryTable from "@/components/monitor-inventory/seed-storage/SeedInventoryTable";
 
+import PM_SeedStorageBarChart from "@/components/monitor-inventory/planting-materials/SeedStorageBarChart";
+import PM_InventoryLocationChart from "@/components/monitor-inventory/planting-materials/InventoryByLocationPieChart";
+import PM_InventoryProgramChart from "@/components/monitor-inventory/planting-materials/InventoryByProgramPieChart";
+import PM_SeedClassBreakdownChart from "@/components/monitor-inventory/planting-materials/SeedClassBreakdownBarChart";
+import PM_SeedInventoryTable from "@/components/monitor-inventory/planting-materials/SeedInventoryTable";
+
+
 export default function MonitorInventoryPage() {
   return (
     <div className="container mx-auto py-4 max-w-3xl">
@@ -39,15 +46,17 @@ export default function MonitorInventoryPage() {
           
           {/* Planting Materials Tab */}
           <TabsContent value="planting-materials">
-            <div className="grid gap-4">
-              <Card className="shadow-md p-4 space-y-4">
-                <CardHeader className="p-0">
-                  <CardTitle>Planting Materials Overview</CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <Skeleton className="h-[400px] w-full" />
-                </CardContent>
-              </Card>
+          <div className="max-w-full overflow-x-auto">
+                <div className="grid gap-4">
+                    <PM_SeedStorageBarChart />
+                    <PM_InventoryLocationChart />
+                    <PM_InventoryProgramChart />
+                    <PM_SeedClassBreakdownChart />
+                </div>
+
+                <div className="mt-4">
+                    <PM_SeedInventoryTable />
+                </div>
             </div>
           </TabsContent>
         </Tabs>

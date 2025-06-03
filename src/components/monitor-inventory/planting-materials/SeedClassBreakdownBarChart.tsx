@@ -6,7 +6,7 @@ import { TrendingUp } from "lucide-react"
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip } from "@/components/ui/chart"
-import { SAMPLE_DATA_INVENTORY } from "@/lib/constants";
+import { PLANTING_MATERIALS } from "@/lib/constants";
 
 // Color palette for different locations
 const locationColors = {
@@ -15,7 +15,7 @@ const locationColors = {
   "Plant Nursery": "#f59e0b", // Amber
 }
 
-export default function SeedClassBreakdownChart() {
+export default function PM_SeedClassBreakdownChart() {
   const [mounted, setMounted] = React.useState(false)
 
   // Ensure component is mounted before rendering chart
@@ -26,8 +26,8 @@ export default function SeedClassBreakdownChart() {
   // Process data to group by seed class and location
   const chartData = React.useMemo(() => {
     // Get unique locations and seed classes
-    const locations = [...new Set(SAMPLE_DATA_INVENTORY.map((item) => item.LOCATION))]
-    const seedClasses = [...new Set(SAMPLE_DATA_INVENTORY.map((item) => item.SEED_CLASS))]
+    const locations = [...new Set(PLANTING_MATERIALS.map((item) => item.LOCATION))]
+    const seedClasses = [...new Set(PLANTING_MATERIALS.map((item) => item.SEED_CLASS))]
 
     // Create data structure for chart
     const processedData = seedClasses.map((seedClass) => {
@@ -44,7 +44,7 @@ export default function SeedClassBreakdownChart() {
       })
 
       // Sum volumes by location for this seed class
-      SAMPLE_DATA_INVENTORY.forEach((item) => {
+      PLANTING_MATERIALS.forEach((item) => {
         if (item.SEED_CLASS === seedClass) {
           classData[item.LOCATION] += item.VOLUME
           classData.totalVolume += item.VOLUME
@@ -66,7 +66,7 @@ export default function SeedClassBreakdownChart() {
 
   // Get unique locations for chart config
   const locations = React.useMemo(() => {
-    return [...new Set(SAMPLE_DATA_INVENTORY.map((item) => item.LOCATION))]
+    return [...new Set(PLANTING_MATERIALS.map((item) => item.LOCATION))]
   }, [])
 
   // Generate chart config
@@ -90,7 +90,7 @@ export default function SeedClassBreakdownChart() {
       return (
         <div className="bg-white p-3 border rounded-lg shadow-lg max-w-sm">
           <p className="font-semibold text-sm mb-2">{label}</p>
-          <p className="text-xs text-gray-600 mb-2">Total Volume: {data.totalVolume}g</p>
+          <p className="text-xs text-gray-600 mb-2">Total Quantity: {data.totalVolume}pcs</p>
           <div className="space-y-2">
             {activeLocations.map((location: any, index: number) => {
               const locationDetails = data.details[location.dataKey] || []
@@ -99,14 +99,14 @@ export default function SeedClassBreakdownChart() {
                   <div className="flex items-center gap-1 mb-1">
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: location.color }} />
                     <span className="font-medium">{location.dataKey}</span>
-                    <span className="text-gray-600">({location.value}g)</span>
+                    <span className="text-gray-600">({location.value}pcs)</span>
                   </div>
                   {locationDetails.length > 0 && (
                     <div className="ml-3 text-gray-600">
                       <p className="font-medium">Varieties:</p>
                       {locationDetails.slice(0, 3).map((detail: any, idx: number) => (
                         <p key={idx}>
-                          • {detail.crop} - {detail.variety} ({detail.volume}g)
+                          • {detail.crop} - {detail.variety} ({detail.volume}pcs)
                         </p>
                       ))}
                       {locationDetails.length > 3 && (
@@ -135,7 +135,7 @@ export default function SeedClassBreakdownChart() {
       <Card className="w-full">
         <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
           <div className="grid flex-1 gap-1 text-center sm:text-left">
-            <CardTitle>Seed Class Breakdown by Location</CardTitle>
+            <CardTitle>Materials' Class Breakdown by Location</CardTitle>
             <CardDescription>Loading chart...</CardDescription>
           </div>
         </CardHeader>
@@ -152,8 +152,8 @@ export default function SeedClassBreakdownChart() {
     <Card className="w-full">
       <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
         <div className="grid flex-1 gap-1 text-center sm:text-left">
-          <CardTitle>Seed Class Breakdown by Location</CardTitle>
-          <CardDescription>Volume stored by seed class across different storage locations</CardDescription>
+          <CardTitle>Materials' Class Breakdown by Location</CardTitle>
+          <CardDescription>Quantity stored by materials' class across different storage locations</CardDescription>
         </div>
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
@@ -178,7 +178,7 @@ export default function SeedClassBreakdownChart() {
               height={80}
               interval={0}
             />
-            <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `${value}g`} />
+            <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `${value}pcs`} />
             <ChartTooltip content={<CustomTooltip />} />
             <ChartLegend
               content={<ChartLegendContent className="flex flex-wrap justify-center gap-2" />}
@@ -203,11 +203,11 @@ export default function SeedClassBreakdownChart() {
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
         <div className="flex items-center gap-2 font-medium leading-none">
-          Total volume: {totalVolume.toLocaleString()}g across {chartData.length} seed classes{" "}
+          Total quantity: {totalVolume.toLocaleString()}pcs across {chartData.length} material classes{" "}
           <TrendingUp className="h-4 w-4" />
         </div>
         <div className="leading-none text-muted-foreground">
-          Based on current seed storage records from {locations.length} locations
+          Based on current materials' storage records from {locations.length} locations
         </div>
       </CardFooter>
     </Card>
