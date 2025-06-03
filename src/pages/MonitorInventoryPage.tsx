@@ -1,7 +1,11 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import SeedStorageBarChart from "@/components/monitor-inventory/seed-storage/SeedStorageBarChart";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+
+import SeedStorageBarChart from "@/components/monitor-inventory/seed-storage/SeedStorageBarChart";
+import InventoryLocationChart from "@/components/monitor-inventory/seed-storage/InventoryByLocationPieChart";
+import InventoryProgramChart from "@/components/monitor-inventory/seed-storage/InventoryByProgramPieChart";
+import SeedClassBreakdownChart from "@/components/monitor-inventory/seed-storage/SeedClassBreakdownBarChart";
 
 export default function MonitorInventoryPage() {
   return (
@@ -17,6 +21,9 @@ export default function MonitorInventoryPage() {
           <TabsContent value="seed-storage">
             <div className="grid gap-4">
               <SeedStorageBarChart />
+              <InventoryLocationChart />
+              <InventoryProgramChart />
+              <SeedClassBreakdownChart />
               {/* Additional charts will be added here */}
             </div>
           </TabsContent>
