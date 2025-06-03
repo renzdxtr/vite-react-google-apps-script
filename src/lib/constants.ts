@@ -391,3 +391,5 @@ export const SAMPLE_DATA_INVENTORY = [
 ]
 
 export const SEED_STORAGE = SAMPLE_DATA_INVENTORY.filter(item => item.INVENTORY === "Seed Storage")
+
+export const PLANTING_MATERIALS = SAMPLE_DATA_INVENTORY.filter(item => item.INVENTORY === "Planting Materials")
