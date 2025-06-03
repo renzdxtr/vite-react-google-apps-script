@@ -97,8 +97,14 @@ function fetchSeedDetailsByQrCode(qrCode) {
       const header = headers[i];
       const value = matchingRow[i] || '';
       
-      // Convert Date objects to strings to ensure they can be serialized
-      const processedValue = value instanceof Date ? value.toString() : value;
+      // Format dates in MM/DD/YYYY format
+      let processedValue = value;
+      if (value instanceof Date) {
+        const month = String(value.getMonth() + 1).padStart(2, '0');
+        const day = String(value.getDate()).padStart(2, '0');
+        const year = value.getFullYear();
+        processedValue = `${month}/${day}/${year}`;
+      }
       
       switch(header) {
         case 'Timestamp':
@@ -214,7 +220,7 @@ function doPost(e) {
 
 function updateSeedVolume(data) {
   try {
-    const { qrCode, withdrawalAmount, withdrawalReason } = data;
+    const { qrCode, inventory, withdrawalAmount, withdrawalReason } = data;
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const formSheet = ss.getSheetByName("Form Responses");
     const logsSheet = ss.getSheetByName("Inventory Logs");
@@ -266,13 +272,14 @@ function updateSeedVolume(data) {
     
     // Log the transaction
     logsSheet.appendRow([
-      timestamp, // Timestamp
-      qrCode, // QR Code
-      "Withdrawal", // Action Type
-      withdrawalAmount, // Amount
-      currentVolume, // Previous Value
-      newVolume, // New Value
-      withdrawalReason // Reason
+      timestamp,          // Timestamp
+      qrCode,             // QR Code
+      inventory,          // Inventory (Seed Storage/Planting Materials)
+      "Withdrawal",       // Action Type
+      withdrawalAmount,   // Amount
+      currentVolume,      // Previous Value
+      newVolume,          // New Value
+      withdrawalReason    // Reason
     ]);
     
     return {
@@ -384,6 +391,7 @@ function updateSeedDetails(data) {
     logsSheet.appendRow([
       timestamp,           // Timestamp
       qrCode,             // QR Code
+      "",                 // Inventory (Seed Storage/Planting Materials)
       "Edit",             // Action Type
       "",                 // Amount (empty for edits)
       JSON.stringify(oldData), // Previous Value

@@ -5,8 +5,8 @@ const isGoogleAppsScript = typeof google !== 'undefined' && google.script;
 const mockFetchSeedDetails = (qrCode) => {
   return Promise.resolve({
       "VARIETY": "Test Variety 291",
-      "SEED_CLASS": "Certified TEST",
-      "LOCATION": "Conventional TEST1",
+      "SEED_CLASS": "Certified",
+      "LOCATION": "Conventional",
       "SEED_PHOTO": "https://drive.google.com/open?id=1OKJg9jK4QdJ70MABD8bCvx1UsHVF6XIo",
       "MOISTURE_CONTENT": 100,
       "LAST_MODIFIED": "Mon Jun 02 2025 13:06:13 GMT+0800 (Philippine Standard Time)",
@@ -14,11 +14,11 @@ const mockFetchSeedDetails = (qrCode) => {
       "EMAIL": "test@example.com",
       "CROP": "Corn TEST",
       "STATUS": "✅ Generated",
-      "INVENTORY": "INVENTORY 101",
+      "INVENTORY": "Seed Storage",
       "TIMESTAMP": "Fri May 09 2025 14:30:09 GMT+0800 (Philippine Standard Time)",
       "CROP_PHOTO": "https://drive.google.com/open?id=19igwvzhh25Ij0wFNGlFjVeETu3WrZ1C2",
       "QR_IMAGE": "https://drive.google.com/file/d/1i0IvFEyaSBPXzMBatCbms9zs-KxdJX7t/view?usp=drivesdk",
-      "BAG_NUMBER": "BAG45",
+      "BAG_NUMBER": "45",
       "UNIT": "Grams (g)",
       "STORED_DATE": "Mon Jun 02 2025 11:28:00 GMT+0800 (Philippine Standard Time)",
       "VOLUME": 250,
@@ -28,8 +28,8 @@ const mockFetchSeedDetails = (qrCode) => {
       "QR_DOCUMENT": "https://docs.google.com/open?id=1BLFrsU3sylv5UObJxYev_QYHK9JctzCnqn4zNcS9iGU",
       "HARVEST_DATE": "Mon Jun 02 2025 11:31:00 GMT+0800 (Philippine Standard Time)",
       "ARCHIVED": "",
-      "LOT_NUMBER": "LOT123 ASD",
-      "PROGRAM": "HVCDP TEST"
+      "LOT_NUMBER": "123",
+      "PROGRAM": "HVCDP"
   });
 };
 
@@ -60,13 +60,32 @@ export function getSheetData(sheetName) {
   return Promise.resolve([/* mock sheet data */]);
 }
 
+// export function fetchSeedDetailsByQrCode(qrCode) {
+//   if (isGoogleAppsScript) {
+//     return new Promise((resolve, reject) => {
+//       google.script.run
+//         .withSuccessHandler((res) => {
+//           console.log("Seed details fetched:", res);
+//           resolve(res);
+//         })
+//         .withFailureHandler((msg) => {
+//           console.error("Error fetching seed details:", msg);
+//           reject(msg);
+//         })
+//         .fetchSeedDetailsByQrCode(qrCode);
+//     });
+//   }
+//   // Return mock data for development
+//   return mockFetchSeedDetails(qrCode);
+// }
+
 export function fetchSeedDetailsByQrCode(qrCode) {
   if (isGoogleAppsScript) {
     return new Promise((resolve, reject) => {
       google.script.run
         .withSuccessHandler((res) => {
           console.log("Seed details fetched:", res);
-          resolve(res);
+          resolve(processSeedDetails(res));
         })
         .withFailureHandler((msg) => {
           console.error("Error fetching seed details:", msg);
@@ -138,4 +157,39 @@ export function updateSeedDetails(data) {
     message: 'Mock update successful',
     data: data
   });
+}
+
+// Process seed details to format dates consistently
+function processSeedDetails(details) {
+  if (!details) return details;
+  
+  const processedDetails = {...details};
+  
+  // Format date fields
+  const dateFields = ['STORED_DATE', 'HARVEST_DATE', 'LAST_MODIFIED', 'TIMESTAMP'];
+  dateFields.forEach(field => {
+    if (processedDetails[field]) {
+      processedDetails[field] = formatDateForDisplay(processedDetails[field]);
+    }
+  });
+  
+  return processedDetails;
+}
+
+// Helper function to format dates consistently
+function formatDateForDisplay(dateString) {
+  if (!dateString) return '';
+  
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${month}/${day}/${year}`;
+  } catch (e) {
+    console.error("Date formatting error:", e);
+    return dateString;
+  }
 }

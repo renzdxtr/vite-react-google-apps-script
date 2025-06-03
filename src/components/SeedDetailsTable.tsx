@@ -124,7 +124,7 @@ export function SeedDetailsTable({
                               }
                             }
                             return value || 'None';
-                          })()} (Format: MM/DD/YYYY)
+                          })()} (Format: DD/MM/YYYY)
                         </small>
                       </div>
                     ) : key in DROPDOWN_CHOICES ? (
