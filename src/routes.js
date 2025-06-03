@@ -6,6 +6,7 @@ import Home from "./pages/Home";
 import Menu from "./pages/Menu"
 import ScanQR from "./pages/ScanQR";
 import SeedManagementPage from "./pages/SeedManagementPage";
+import MonitorInventoryPage from './pages/MonitorInventoryPage';
 
 export const routes = [
   {
@@ -48,5 +49,10 @@ export const routes = [
     title: "Seed Management",
     url: "/scan-qr/details",
     component: SeedManagementPage,
+  },
+  {
+    title: "Monitor Inventory",
+    url: "/monitor-inventory",
+    component: MonitorInventoryPage,
   },
 ];
