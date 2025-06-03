@@ -6,12 +6,12 @@ import { Label, Pie, PieChart } from "recharts"
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { type ChartConfig, ChartContainer, ChartTooltip } from "@/components/ui/chart"
-import { SEED_STORAGE } from "@/lib/constants";
+import { SAMPLE_DATA_INVENTORY } from "@/lib/constants";
 
 // Color palette for different locations
 const colors = ["#4CAF50", "#388E3C", "#FF9800", "#F57C00", "#1976D2", "#1565C0"]
 
-export default function InventoryProgramChart() {
+export default function InventoryLocationChart() {
   const [mounted, setMounted] = React.useState(false)
 
   // Ensure component is mounted before rendering chart
@@ -19,22 +19,22 @@ export default function InventoryProgramChart() {
     setMounted(true)
   }, [])
 
-  // Process data to group by program and sum volumes
+  // Process data to group by location and sum volumes
   const chartData = React.useMemo(() => {
-    const programData = SEED_STORAGE.reduce(
+    const locationData = SAMPLE_DATA_INVENTORY.reduce(
       (acc, item) => {
-        const program = item.PROGRAM
-        if (!acc[program]) {
-          acc[program] = {
-            program,
+        const location = item.LOCATION
+        if (!acc[location]) {
+          acc[location] = {
+            location,
             volume: 0,
             count: 0,
             varieties: [],
           }
         }
-        acc[program].volume += item.VOLUME
-        acc[program].count += 1
-        acc[program].varieties.push({
+        acc[location].volume += item.VOLUME
+        acc[location].count += 1
+        acc[location].varieties.push({
           variety: item.VARIETY,
           crop: item.CROP,
           volume: item.VOLUME,
@@ -44,9 +44,9 @@ export default function InventoryProgramChart() {
       {} as Record<string, any>,
     )
 
-    return Object.values(programData)
+    return Object.values(locationData)
       .map((item: any, index) => ({
-        program: item.program,
+        location: item.location,
         volume: item.volume,
         count: item.count,
         varieties: item.varieties,
@@ -64,8 +64,8 @@ export default function InventoryProgramChart() {
     }
 
     chartData.forEach((item, index) => {
-      config[item.program.toLowerCase().replace(/\s+/g, "")] = {
-        label: item.program,
+      config[item.location.toLowerCase().replace(/\s+/g, "")] = {
+        label: item.location,
         color: colors[index % colors.length],
       }
     })
@@ -86,7 +86,7 @@ export default function InventoryProgramChart() {
 
       return (
         <div className="bg-white p-3 border rounded-lg shadow-lg max-w-xs">
-          <p className="font-semibold text-sm mb-1">{data.program}</p>
+          <p className="font-semibold text-sm mb-1">{data.location}</p>
           <p className="text-sm text-blue-600 mb-1">Volume: {data.volume.toLocaleString()}g</p>
           <p className="text-sm text-gray-600 mb-2">Percentage: {percentage}%</p>
           <p className="text-xs text-gray-600 mb-1">Items: {data.count}</p>
@@ -112,7 +112,7 @@ export default function InventoryProgramChart() {
     return (
       <Card className="flex flex-col">
         <CardHeader className="items-center pb-0">
-          <CardTitle>Inventory by Program</CardTitle>
+          <CardTitle>Inventory by Location</CardTitle>
           <CardDescription>Loading chart...</CardDescription>
         </CardHeader>
         <CardContent className="flex-1 pb-0">
@@ -127,14 +127,14 @@ export default function InventoryProgramChart() {
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Inventory by Program</CardTitle>
-        <CardDescription>Seed storage volume distribution by program</CardDescription>
+        <CardTitle>Inventory by Location</CardTitle>
+        <CardDescription>Seed storage volume distribution by location</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
         <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[250px]">
           <PieChart>
             <ChartTooltip cursor={false} content={<CustomTooltip />} />
-            <Pie data={chartData} dataKey="volume" nameKey="program" innerRadius={60} strokeWidth={5}>
+            <Pie data={chartData} dataKey="volume" nameKey="location" innerRadius={60} strokeWidth={5}>
               <Label
                 content={({ viewBox }) => {
                   if (viewBox && "cx" in viewBox && "cy" in viewBox) {
@@ -157,9 +157,9 @@ export default function InventoryProgramChart() {
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
         <div className="flex items-center gap-2 font-medium leading-none">
-          {chartData.length} programs active <TrendingUp className="h-4 w-4" />
+          {chartData.length} storage locations active <TrendingUp className="h-4 w-4" />
         </div>
-        <div className="leading-none text-muted-foreground">Showing total seed volume across all programs</div>
+        <div className="leading-none text-muted-foreground">Showing total seed volume across all storage locations</div>
       </CardFooter>
     </Card>
   )

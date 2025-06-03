@@ -6,7 +6,7 @@ import { Label, Pie, PieChart } from "recharts"
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { type ChartConfig, ChartContainer, ChartTooltip } from "@/components/ui/chart"
-import { SAMPLE_DATA_INVENTORY } from "@/lib/constants";
+import { SEED_STORAGE } from "@/lib/constants";
 
 // Color palette for different locations
 const colors = ["#4CAF50", "#388E3C", "#FF9800", "#F57C00", "#1976D2", "#1565C0"]
@@ -21,7 +21,7 @@ export default function InventoryLocationChart() {
 
   // Process data to group by location and sum volumes
   const chartData = React.useMemo(() => {
-    const locationData = SAMPLE_DATA_INVENTORY.reduce(
+    const locationData = SEED_STORAGE.reduce(
       (acc, item) => {
         const location = item.LOCATION
         if (!acc[location]) {

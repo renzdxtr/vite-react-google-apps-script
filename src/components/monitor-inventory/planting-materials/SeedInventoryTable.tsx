@@ -18,7 +18,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { SEED_STORAGE } from "@/lib/constants";
+import { SAMPLE_DATA_INVENTORY } from "@/lib/constants";
 
 // Global thresholds - easily configurable
 const LOW_STOCK_THRESHOLD = 10_000 // grams
@@ -34,7 +34,7 @@ const CURRENT_DATE = new Date()
 
 // Process inventory data and calculate days stored
 const processInventoryData = () => {
-  return SEED_STORAGE.map((item) => {
+  return SAMPLE_DATA_INVENTORY.map((item) => {
     const storedDate = new Date(item.STORED_DATE)
     const daysDiff = Math.floor((CURRENT_DATE.getTime() - storedDate.getTime()) / (1000 * 60 * 60 * 24))
 

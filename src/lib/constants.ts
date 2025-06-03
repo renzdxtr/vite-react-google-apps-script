@@ -389,3 +389,5 @@ export const SAMPLE_DATA_INVENTORY = [
     "PROGRAM": "NOAP"
   }
 ]
+
+export const SEED_STORAGE = SAMPLE_DATA_INVENTORY.filter(item => item.INVENTORY === "Seed Storage")
