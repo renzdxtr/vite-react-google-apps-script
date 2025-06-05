@@ -6,7 +6,10 @@ import { TrendingUp } from "lucide-react"
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip } from "@/components/ui/chart"
-import { PLANTING_MATERIALS } from "@/lib/constants";
+
+interface PlantingMaterialsChartProps {
+  data: any[];
+}
 
 // Color palette for different locations
 const locationColors = {
@@ -15,7 +18,7 @@ const locationColors = {
   "Plant Nursery": "#f59e0b", // Amber
 }
 
-export default function PM_SeedClassBreakdownChart() {
+export default function PM_SeedClassBreakdownChart({ data } : PlantingMaterialsChartProps) {
   const [mounted, setMounted] = React.useState(false)
 
   // Ensure component is mounted before rendering chart
@@ -26,8 +29,8 @@ export default function PM_SeedClassBreakdownChart() {
   // Process data to group by seed class and location
   const chartData = React.useMemo(() => {
     // Get unique locations and seed classes
-    const locations = [...new Set(PLANTING_MATERIALS.map((item) => item.LOCATION))]
-    const seedClasses = [...new Set(PLANTING_MATERIALS.map((item) => item.SEED_CLASS))]
+    const locations = [...new Set(data.map((item) => item.LOCATION))]
+    const seedClasses = [...new Set(data.map((item) => item.SEED_CLASS))]
 
     // Create data structure for chart
     const processedData = seedClasses.map((seedClass) => {
@@ -44,7 +47,7 @@ export default function PM_SeedClassBreakdownChart() {
       })
 
       // Sum volumes by location for this seed class
-      PLANTING_MATERIALS.forEach((item) => {
+      data.forEach((item) => {
         if (item.SEED_CLASS === seedClass) {
           classData[item.LOCATION] += item.VOLUME
           classData.totalVolume += item.VOLUME
@@ -66,7 +69,7 @@ export default function PM_SeedClassBreakdownChart() {
 
   // Get unique locations for chart config
   const locations = React.useMemo(() => {
-    return [...new Set(PLANTING_MATERIALS.map((item) => item.LOCATION))]
+    return [...new Set(data.map((item) => item.LOCATION))]
   }, [])
 
   // Generate chart config

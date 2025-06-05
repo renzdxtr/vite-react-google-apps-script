@@ -18,7 +18,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { PLANTING_MATERIALS } from "@/lib/constants";
+
+interface PlantingMaterialsTableProps {
+  data: any[];
+}
 
 // Global thresholds - easily configurable
 const LOW_STOCK_THRESHOLD = 10_000 // grams
@@ -32,28 +35,33 @@ const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
 // Get current date dynamically
 const CURRENT_DATE = new Date()
 
-// Process inventory data and calculate days stored
-const processInventoryData = () => {
-  return PLANTING_MATERIALS.map((item) => {
-    const storedDate = new Date(item.STORED_DATE)
-    const daysDiff = Math.floor((CURRENT_DATE.getTime() - storedDate.getTime()) / (1000 * 60 * 60 * 24))
+export default function PM_SeedInventoryTable({ data } : PlantingMaterialsTableProps) {
 
-    return {
-      crop: item.CROP,
-      variety: item.VARIETY,
-      lotNumber: item.LOT_NUMBER,
-      dateStored: item.STORED_DATE,
-      quantityLeft: item.VOLUME,
-      daysStored: daysDiff,
-      location: item.LOCATION,
-      seedClass: item.SEED_CLASS,
-      germinationRate: item.GERMINATION_RATE,
-    }
-  })
-}
+  // Process inventory data and calculate days stored
+  const processInventoryData = React.useCallback(() => {
+    return data.map((item) => {
+      const storedDate = new Date(item.STORED_DATE);
+      const daysDiff = Math.floor((CURRENT_DATE.getTime() - storedDate.getTime()) / (1000 * 60 * 60 * 24));
+      return {
+        crop: item.CROP,
+        variety: item.VARIETY,
+        lotNumber: item.LOT_NUMBER,
+        dateStored: item.STORED_DATE,
+        quantityLeft: item.VOLUME,
+        daysStored: daysDiff,
+        location: item.LOCATION,
+        seedClass: item.SEED_CLASS,
+        germinationRate: item.GERMINATION_RATE,
+      };
+    });
+  }, [data]);
 
-export default function PM_SeedInventoryTable() {
-  const [inventoryData, setInventoryData] = React.useState(processInventoryData())
+  const [inventoryData, setInventoryData] = React.useState(processInventoryData());
+
+  React.useEffect(() => {
+    setInventoryData(processInventoryData());
+  }, [processInventoryData]);
+
   const [searchQuery, setSearchQuery] = React.useState("")
   const [selectedRowIndex, setSelectedRowIndex] = React.useState<number | null>(null)
   const [currentPage, setCurrentPage] = React.useState(1)

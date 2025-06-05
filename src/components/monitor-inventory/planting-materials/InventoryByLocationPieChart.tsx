@@ -6,12 +6,15 @@ import { Label, Pie, PieChart } from "recharts"
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { type ChartConfig, ChartContainer, ChartTooltip } from "@/components/ui/chart"
-import { PLANTING_MATERIALS } from "@/lib/constants";
+
+interface PlantingMaterialsChartProps {
+  data: any[];
+}
 
 // Color palette for different locations
 const colors = ["#4CAF50", "#388E3C", "#FF9800", "#F57C00", "#1976D2", "#1565C0"]
 
-export default function PM_InventoryLocationChart() {
+export default function PM_InventoryLocationChart({ data } : PlantingMaterialsChartProps) {
   const [mounted, setMounted] = React.useState(false)
 
   // Ensure component is mounted before rendering chart
@@ -21,7 +24,7 @@ export default function PM_InventoryLocationChart() {
 
   // Process data to group by location and sum volumes
   const chartData = React.useMemo(() => {
-    const locationData = PLANTING_MATERIALS.reduce(
+    const locationData = data.reduce(
       (acc, item) => {
         const location = item.LOCATION
         if (!acc[location]) {

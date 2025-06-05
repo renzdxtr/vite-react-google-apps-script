@@ -6,7 +6,10 @@ import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { SEED_STORAGE } from "@/lib/constants";
+
+interface SeedStorageChartProps {
+  data: any[];
+}
 
 // Color palette for different crops with distinct colors
 const cropColors = {
@@ -26,7 +29,7 @@ const cropColors = {
   "Corn": "#F1948A", // Light Red
 }
 
-export default function GerminationRateChart() {
+export default function GerminationRateChart({ data } : SeedStorageChartProps) {
     const [lotFilter, setLotFilter] = React.useState("all")
     const [mounted, setMounted] = React.useState(false)
   
@@ -34,14 +37,17 @@ export default function GerminationRateChart() {
     React.useEffect(() => {
       setMounted(true)
     }, [])
+
+    const data2 = data
+
+    let filteredData = data2
   
     // Process data to create the chart structure with LOT_NUMBER on x-axis and CROP as series
     const { chartData, chartConfig } = React.useMemo(() => {
       // Filter data based on lot number if selected
-      let filteredData = SEED_STORAGE
   
       if (lotFilter !== "all") {
-        filteredData = SEED_STORAGE.filter((item) => item.LOT_NUMBER.toString() === lotFilter)
+        filteredData = data2.filter((item) => item.LOT_NUMBER.toString() === lotFilter)
       }
   
       // Get unique crops and lot numbers from filtered data
@@ -82,7 +88,7 @@ export default function GerminationRateChart() {
   
     // Get unique lot numbers for filter options
     const availableLots = React.useMemo(() => {
-      const lots = [...new Set(SEED_STORAGE.map((item) => item.LOT_NUMBER))].sort()
+      const lots = [...new Set(data.map((item) => item.LOT_NUMBER))].sort()
       return lots
     }, [])
   

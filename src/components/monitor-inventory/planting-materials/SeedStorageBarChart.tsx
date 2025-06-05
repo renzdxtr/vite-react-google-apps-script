@@ -6,12 +6,15 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip } from "@/components/ui/chart"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { PLANTING_MATERIALS } from "@/lib/constants";
+
+interface PlantingMaterialsChartProps {
+  data: any[];
+}
 
 // Color palette for different varieties
 const colors = ["#4CAF50", "#388E3C", "#FF9800", "#F57C00", "#1976D2", "#1565C0"]
 
-export default function PM_SeedStorageBarChart() {
+export default function PM_SeedStorageBarChart({ data } : PlantingMaterialsChartProps) {
   const [dateFilter, setDateFilter] = React.useState("all")
   const [mounted, setMounted] = React.useState(false)
 
@@ -22,17 +25,17 @@ export default function PM_SeedStorageBarChart() {
 
   // Get unique varieties for chart config
   const allVarieties = React.useMemo(() => {
-    return [...new Set(PLANTING_MATERIALS.map((item) => item.VARIETY))]
+    return [...new Set(data.map((item) => item.VARIETY))]
   }, [])
 
   // Process data to group by crop and stack by variety
   const processedData = React.useMemo(() => {
     // Filter data based on stored date (monthly)
-    let filteredData = PLANTING_MATERIALS
+    let filteredData = data
 
     if (dateFilter !== "all") {
       const [year, month] = dateFilter.split("-")
-      filteredData = PLANTING_MATERIALS.filter((item) => {
+      filteredData = data.filter((item) => {
         const storedDate = new Date(item.STORED_DATE)
         const itemYear = storedDate.getFullYear().toString()
         const itemMonth = (storedDate.getMonth() + 1).toString().padStart(2, "0")
@@ -86,7 +89,7 @@ export default function PM_SeedStorageBarChart() {
   // Get unique months for filter options
   const availableMonths = React.useMemo(() => {
     const months = new Set<string>()
-    PLANTING_MATERIALS.forEach((item) => {
+    data.forEach((item) => {
       const date = new Date(item.STORED_DATE)
       const year = date.getFullYear()
       const month = (date.getMonth() + 1).toString().padStart(2, "0")
