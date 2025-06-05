@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { useAllSeedDetails } from "@/hooks/useSeedDetails";
 
 import SeedStorageBarChart from "@/components/monitor-inventory/seed-storage/SeedStorageBarChart";
 import InventoryLocationChart from "@/components/monitor-inventory/seed-storage/InventoryByLocationPieChart";
@@ -17,6 +18,20 @@ import PM_SeedInventoryTable from "@/components/monitor-inventory/planting-mater
 
 
 export default function MonitorInventoryPage() {
+  const { seedDetails, isLoading, error } = useAllSeedDetails();
+
+  // Filter data for each inventory type
+  const seedStorageData = seedDetails.filter(item => item.INVENTORY === "Seed Storage");
+  const plantingMaterialsData = seedDetails.filter(item => item.INVENTORY === "Planting Materials");
+
+  if (isLoading) {
+    return <div className="container mx-auto py-4"><Skeleton className="h-[400px]"/></div>;
+  }
+
+  if (error) {
+    return <div className="container mx-auto py-4 text-red-500">Error loading data: {error}</div>;
+  }
+
   return (
     <div className="container mx-auto py-4 max-w-3xl">
       <div className="space-y-4">
@@ -30,32 +45,31 @@ export default function MonitorInventoryPage() {
           <TabsContent value="seed-storage">
             <div className="max-w-full overflow-x-auto">
                 <div className="grid gap-4">
-                    <SeedStorageBarChart />
-                    <InventoryLocationChart />
-                    <InventoryProgramChart />
-                    <SeedClassBreakdownChart />
-                    <GerminationRateChart />
+                    <SeedStorageBarChart data={seedStorageData} />
+                    <InventoryLocationChart data={seedStorageData} />
+                    <InventoryProgramChart data={seedStorageData} />
+                    <SeedClassBreakdownChart data={seedStorageData} />
+                    <GerminationRateChart data={seedStorageData} />
                 </div>
 
                 <div className="mt-4">
-                    <SeedInventoryTable />
+                    <SeedInventoryTable data={seedStorageData} />
                 </div>
             </div>
-
           </TabsContent>
           
           {/* Planting Materials Tab */}
           <TabsContent value="planting-materials">
-          <div className="max-w-full overflow-x-auto">
+            <div className="max-w-full overflow-x-auto">
                 <div className="grid gap-4">
-                    <PM_SeedStorageBarChart />
-                    <PM_InventoryLocationChart />
-                    <PM_InventoryProgramChart />
-                    <PM_SeedClassBreakdownChart />
+                    <PM_SeedStorageBarChart data={plantingMaterialsData} />
+                    <PM_InventoryLocationChart data={plantingMaterialsData} />
+                    <PM_InventoryProgramChart data={plantingMaterialsData} />
+                    <PM_SeedClassBreakdownChart data={plantingMaterialsData} />
                 </div>
 
                 <div className="mt-4">
-                    <PM_SeedInventoryTable />
+                    <PM_SeedInventoryTable data={plantingMaterialsData} />
                 </div>
             </div>
           </TabsContent>

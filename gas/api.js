@@ -19,5 +19,4 @@ const getSheetNamesAndHeaders = () => {
     return { [sheet.getName()]: headers };
   });
   return { sheetNames, headers };
-}
-
+};

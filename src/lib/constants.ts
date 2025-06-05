@@ -111,7 +111,7 @@ export const SAMPLE_DATA_INVENTORY = [
     "MOISTURE_CONTENT": 11,
     "CROP": "Tomato",
     "INVENTORY": "Planting Materials",
-    "BAG_NUMBER": 8,
+    "BAG_NUMBER": 0,
     "UNIT": "Grams (g)",
     "STORED_DATE": "04/20/2025",
     "VOLUME": 1250,
@@ -119,7 +119,7 @@ export const SAMPLE_DATA_INVENTORY = [
     "CODE": "Sbn11-3-2-01-15-2025-P",
     "QR_DOCUMENT": "https://docs.google.com/open?id=1",
     "HARVEST_DATE": "05/18/2025",
-    "LOT_NUMBER": 3,
+    "LOT_NUMBER": 0,
     "PROGRAM": "NCP"
   },
   {
@@ -130,7 +130,7 @@ export const SAMPLE_DATA_INVENTORY = [
     "MOISTURE_CONTENT": 9,
     "CROP": "Hot Pepper",
     "INVENTORY": "Seed Storage",
-    "BAG_NUMBER": 12,
+    "BAG_NUMBER": 0,
     "UNIT": "Grams (g)",
     "STORED_DATE": "05/18/2025",
     "VOLUME": 980,
@@ -138,7 +138,7 @@ export const SAMPLE_DATA_INVENTORY = [
     "CODE": "Sbn17-4-5-03-16-2025-O",
     "QR_DOCUMENT": "https://docs.google.com/open?id=2",
     "HARVEST_DATE": "05/16/2025",
-    "LOT_NUMBER": 4,
+    "LOT_NUMBER": 0,
     "PROGRAM": "HVCDP"
   },
   {
@@ -149,7 +149,7 @@ export const SAMPLE_DATA_INVENTORY = [
     "MOISTURE_CONTENT": 10,
     "CROP": "Mungbean",
     "INVENTORY": "Seed Storage",
-    "BAG_NUMBER": 15,
+    "BAG_NUMBER": 0,
     "UNIT": "Grams (g)",
     "STORED_DATE": "05/23/2025",
     "VOLUME": 1500,
@@ -157,7 +157,7 @@ export const SAMPLE_DATA_INVENTORY = [
     "CODE": "Sbn20-6-4-06-21-2025-B",
     "QR_DOCUMENT": "https://docs.google.com/open?id=3",
     "HARVEST_DATE": "05/21/2025",
-    "LOT_NUMBER": 6,
+    "LOT_NUMBER": 0,
     "PROGRAM": "NOAP"
   },
   {
@@ -168,7 +168,7 @@ export const SAMPLE_DATA_INVENTORY = [
     "MOISTURE_CONTENT": 12,
     "CROP": "Okra",
     "INVENTORY": "Planting Materials",
-    "BAG_NUMBER": 6,
+    "BAG_NUMBER": 0,
     "UNIT": "Grams (g)",
     "STORED_DATE": "06/25/2025",
     "VOLUME": 1000,
@@ -176,7 +176,7 @@ export const SAMPLE_DATA_INVENTORY = [
     "CODE": "Sbn18-2-7-05-20-2025-X",
     "QR_DOCUMENT": "https://docs.google.com/open?id=4",
     "HARVEST_DATE": "05/20/2025",
-    "LOT_NUMBER": 2,
+    "LOT_NUMBER": 0,
     "PROGRAM": "HVCDP"
   },
   {

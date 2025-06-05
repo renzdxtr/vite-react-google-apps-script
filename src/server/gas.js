@@ -1,3 +1,5 @@
+import { SAMPLE_DATA_INVENTORY } from "@/lib/constants";
+
 // Check if running in Google Apps Script environment
 const isGoogleAppsScript = typeof google !== 'undefined' && google.script;
 
@@ -59,25 +61,6 @@ export function getSheetData(sheetName) {
   // Return mock data for development
   return Promise.resolve([/* mock sheet data */]);
 }
-
-// export function fetchSeedDetailsByQrCode(qrCode) {
-//   if (isGoogleAppsScript) {
-//     return new Promise((resolve, reject) => {
-//       google.script.run
-//         .withSuccessHandler((res) => {
-//           console.log("Seed details fetched:", res);
-//           resolve(res);
-//         })
-//         .withFailureHandler((msg) => {
-//           console.error("Error fetching seed details:", msg);
-//           reject(msg);
-//         })
-//         .fetchSeedDetailsByQrCode(qrCode);
-//     });
-//   }
-//   // Return mock data for development
-//   return mockFetchSeedDetails(qrCode);
-// }
 
 export function fetchSeedDetailsByQrCode(qrCode) {
   if (isGoogleAppsScript) {
@@ -193,3 +176,29 @@ function formatDateForDisplay(dateString) {
     return dateString;
   }
 }
+
+const mockFetchAllSeedDetails = (inventoryFilter) => {
+  console.log("Mock fetchAllSeedDetails called with filter:", inventoryFilter);
+  // Return mock data for development
+  return Promise.resolve(SAMPLE_DATA_INVENTORY);
+};
+
+export function fetchAllSeedDetails(inventoryFilter) {
+  if (isGoogleAppsScript) {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler((res) => {
+          console.log("All seed details fetched:", res);
+          resolve(res);
+        })
+        .withFailureHandler((msg) => {
+          console.error("Error fetching all seed details:", msg);
+          reject(msg);
+        })
+        .fetchSeedDetails(inventoryFilter);
+    });
+  }
+  // Return mock data for development
+  return mockFetchAllSeedDetails(inventoryFilter);
+}
+

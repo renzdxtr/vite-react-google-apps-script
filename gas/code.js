@@ -413,3 +413,126 @@ function updateSeedDetails(data) {
     };
   }
 }
+
+/**
+ * Fetches all seed details with optional inventory filtering
+ */
+function fetchSeedDetails(inventoryFilter = null) {
+  console.log("FETCHING SEED DETAILS");
+  if (inventoryFilter) {
+    console.log("Filtering by inventory: " + inventoryFilter);
+  }
+  
+  try {
+    const spreadsheetId = '1kVzhjXX45GLnqiLiqmeg81sy0FAtEd70EcMAo2_Ejlc';
+    const sheetName = 'Form Responses';
+    
+    const sheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName(sheetName);
+    if (!sheet) {
+      throw new Error(`Sheet "${sheetName}" not found`);
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) {
+      throw new Error("No data found in the spreadsheet");
+    }
+    
+    const headers = data[0];
+    const results = [];
+    
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const seedRecord = mapRowToSeedRecord(headers, row);
+      
+      if (!inventoryFilter || seedRecord.INVENTORY === inventoryFilter) {
+        results.push(seedRecord);
+      }
+    }
+    
+    return results;
+    
+  } catch (error) {
+    console.error('Error in fetchSeedDetails: ' + error.message);
+    throw error;
+  }
+}
+
+// Helper function to map a spreadsheet row to seed record object
+function mapRowToSeedRecord(headers, row) {
+  const result = {
+    "LOCATION": "",
+    "SEED_CLASS": "",
+    "VARIETY": "",
+    "LAST_MODIFIED": "",
+    "MOISTURE_CONTENT": "",
+    "CROP": "",
+    "INVENTORY": "",
+    "BAG_NUMBER": "",
+    "UNIT": "",
+    "STORED_DATE": "",
+    "VOLUME": "",
+    "GERMINATION_RATE": "",
+    "CODE": "",
+    "QR_DOCUMENT": "",
+    "HARVEST_DATE": "",
+    "LOT_NUMBER": "",
+    "PROGRAM": ""
+  };
+  
+  // Map columns to standardized fields
+  for (let i = 0; i < headers.length; i++) {
+    const header = headers[i];
+    const value = row[i] || '';
+    const fieldKey = getFieldKeyFromHeader(header);
+    
+    if (fieldKey) {
+      // Process the value based on field type
+      let processedValue = value;
+      
+      // Format dates to MM/DD/YYYY
+      if (value instanceof Date) {
+        const month = String(value.getMonth() + 1).padStart(2, '0');
+        const day = String(value.getDate()).padStart(2, '0');
+        const year = value.getFullYear();
+        processedValue = `${month}/${day}/${year}`;
+      }
+      
+      // Convert to numbers for numeric fields
+      if (['MOISTURE_CONTENT', 'GERMINATION_RATE', 'VOLUME', 'BAG_NUMBER', 'LOT_NUMBER'].includes(fieldKey)) {
+        const numValue = parseFloat(processedValue);
+        if (!isNaN(numValue)) {
+          processedValue = numValue;
+        }
+      }
+      
+      result[fieldKey] = processedValue;
+    }
+  }
+  
+  return result;
+}
+
+// Helper function to get field key from column header
+function getFieldKeyFromHeader(header) {
+  const requiredFieldMapping = {
+    "Location": "LOCATION",
+    "Seed Class": "SEED_CLASS",
+    "Variety": "VARIETY",
+    "Last Modified": "LAST_MODIFIED",
+    "Moisture Content (%)": "MOISTURE_CONTENT",
+    "Crop": "CROP",
+    "Inventory": "INVENTORY",
+    "Bag Number": "BAG_NUMBER",
+    "Unit": "UNIT",
+    "Date Stored": "STORED_DATE",
+    "Volume Stored": "VOLUME",
+    "Germination Rate (%)": "GERMINATION_RATE",
+    "Code": "CODE",
+    "QR Document": "QR_DOCUMENT",
+    "Date of Harvest": "HARVEST_DATE",
+    "Lot Number": "LOT_NUMBER",
+    "Program": "PROGRAM"
+  };
+  
+  return requiredFieldMapping[header] || null;
+}

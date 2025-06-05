@@ -1,6 +1,6 @@
 // src/hooks/useSeedDetails.ts
 import { useState, useEffect, useCallback } from 'react';
-import { fetchSeedDetailsByQrCode } from '@/server/gas';
+import { fetchSeedDetailsByQrCode, fetchAllSeedDetails } from '@/server/gas';
 
 export interface SeedDetails {
   [key: string]: any;
@@ -47,6 +47,39 @@ export function useSeedDetails(qrCode: string | null): UseSeedDetailsResult {
       setIsLoading(false);
     }
   }, [qrCode]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return { seedDetails, isLoading, error, refetch: fetchData };
+}
+
+export function useAllSeedDetails(inventoryFilter?: string): {
+  seedDetails: SeedDetails[];
+  isLoading: boolean;
+  error: string | null;
+  refetch: () => Promise<void>;
+} {
+  const [seedDetails, setSeedDetails] = useState<SeedDetails[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    setSeedDetails([]);
+
+    try {
+      const details = await fetchAllSeedDetails(inventoryFilter);
+      setSeedDetails(details);
+    } catch (err: any) {
+      console.error('Error in useAllSeedDetails:', err);
+      setError(err.message || 'An unknown error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [inventoryFilter]);
 
   useEffect(() => {
     fetchData();
