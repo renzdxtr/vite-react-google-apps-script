@@ -9,12 +9,13 @@ export const PAGE_TITLES: Record<string, string> = {
   '/scan-qr': 'Scan QR',
   '/scan-qr/details': 'Seed Management',
   '/seed-withdrawal': 'Seed Withdrawal',
-  '/Tasks': 'Tasks'
+  '/dashboard': 'Dashboard'
 };
 
 export const MENU_ITEMS = [
   { label: 'Home', href: '/' },
   { label: 'Menu', href: '/menu' },
+  { label: 'Dashboard', href: '/dashboard' },
   { label: 'Monitor Inventory', href: '/monitor-inventory' },
 ];
 

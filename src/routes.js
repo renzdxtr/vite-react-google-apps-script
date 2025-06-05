@@ -1,12 +1,9 @@
-import Profile from "./pages/Profile";
-import Contact from "./pages/Contact";
-import Tasks from "./pages/Tasks";
-import Settings from "./pages/Settings";
 import Home from "./pages/Home";
 import Menu from "./pages/Menu"
 import ScanQR from "./pages/ScanQR";
 import SeedManagementPage from "./pages/SeedManagementPage";
 import MonitorInventoryPage from './pages/MonitorInventoryPage';
+import Dashboard from "./pages/Dashboard";
 
 export const routes = [
   {
@@ -18,27 +15,6 @@ export const routes = [
     title: "Menu",
     url: "/menu",
     component: Menu,
-  },
-  {
-    title: "Tasks",
-    url: "/Tasks",
-    component: Tasks,
-  },
-  {
-    title: "Settings",
-    url: "/settings",
-    component: Settings,
-  },
-  {
-    title: "Contact",
-    url: "/contact",
-    component: Contact,
-  },
-
-  {
-    title: "Profile",
-    url: "/profile",
-    component: Profile,
   },
   {
     title: "Scan QR",
@@ -54,5 +30,10 @@ export const routes = [
     title: "Monitor Inventory",
     url: "/monitor-inventory",
     component: MonitorInventoryPage,
+  },
+  {
+    title: "Dashboard",
+    url: "/dashboard",
+    component: Dashboard,
   },
 ];
