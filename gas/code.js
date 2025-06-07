@@ -223,7 +223,7 @@ function updateSeedVolume(data) {
     const { qrCode, inventory, withdrawalAmount, withdrawalReason } = data;
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const formSheet = ss.getSheetByName("Form Responses");
-    const logsSheet = ss.getSheetByName("Inventory Logs");
+    const logsSheet = ss.getSheetByName("Withdrawal Logs");
     
     // Find the row with matching QR code
     const dataRange = formSheet.getDataRange();
@@ -275,11 +275,11 @@ function updateSeedVolume(data) {
       timestamp,          // Timestamp
       qrCode,             // QR Code
       inventory,          // Inventory (Seed Storage/Planting Materials)
-      "Withdrawal",       // Action Type
       withdrawalAmount,   // Amount
       currentVolume,      // Previous Value
       newVolume,          // New Value
-      withdrawalReason    // Reason
+      withdrawalReason,   // Reason
+      ""                  // User
     ]);
     
     return {
@@ -336,7 +336,7 @@ function updateSeedDetails(data) {
     const { qrCode, oldData, newData } = data;
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const formSheet = ss.getSheetByName("Form Responses");
-    const logsSheet = ss.getSheetByName("Inventory Logs");
+    const logsSheet = ss.getSheetByName("Edit Logs");
     
     // Find the row with matching QR code
     const dataRange = formSheet.getDataRange();
@@ -389,14 +389,11 @@ function updateSeedDetails(data) {
 
     // Log the changes in Inventory Logs
     logsSheet.appendRow([
-      timestamp,           // Timestamp
-      qrCode,             // QR Code
-      "",                 // Inventory (Seed Storage/Planting Materials)
-      "Edit",             // Action Type
-      "",                 // Amount (empty for edits)
-      JSON.stringify(oldData), // Previous Value
-      JSON.stringify(newData), // New Value
-      "Edit Details"      // Reason
+      timestamp,                  // Timestamp
+      qrCode,                     // QR Code
+      JSON.stringify(oldData),    // Previous Value
+      JSON.stringify(newData),    // New Value
+      ""                          // User
     ]);
 
     return {
