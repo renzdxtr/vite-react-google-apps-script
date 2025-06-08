@@ -20,7 +20,7 @@ function fetchSeedDetailsByQrCode(qrCode) {
   
   try {
     const spreadsheetId = '1kVzhjXX45GLnqiLiqmeg81sy0FAtEd70EcMAo2_Ejlc';
-    const sheetName = 'Form Responses';
+    const sheetName = SHEET_NAMES.FORM_RESPONSES;
     
     // Open the spreadsheet and get the data
     const sheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName(sheetName);
@@ -222,8 +222,8 @@ function updateSeedVolume(data) {
   try {
     const { qrCode, inventory, withdrawalAmount, withdrawalReason } = data;
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const formSheet = ss.getSheetByName("Form Responses");
-    const logsSheet = ss.getSheetByName("Withdrawal Logs");
+    const formSheet = ss.getSheetByName(SHEET_NAMES.FORM_RESPONSES);
+    const logsSheet = ss.getSheetByName(SHEET_NAMES.WITHDRAWAL_LOGS);
     
     // Find the row with matching QR code
     const dataRange = formSheet.getDataRange();
@@ -335,8 +335,8 @@ function updateSeedDetails(data) {
   try {
     const { qrCode, oldData, newData } = data;
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const formSheet = ss.getSheetByName("Form Responses");
-    const logsSheet = ss.getSheetByName("Edit Logs");
+    const formSheet = ss.getSheetByName(SHEET_NAMES.FORM_RESPONSES);
+    const logsSheet = ss.getSheetByName(SHEET_NAMES.EDIT_LOGS);
     
     // Find the row with matching QR code
     const dataRange = formSheet.getDataRange();
@@ -422,7 +422,7 @@ function fetchSeedDetails(inventoryFilter = null) {
   
   try {
     const spreadsheetId = '1kVzhjXX45GLnqiLiqmeg81sy0FAtEd70EcMAo2_Ejlc';
-    const sheetName = 'Form Responses';
+    const sheetName = SHEET_NAMES.FORM_RESPONSES;
     
     const sheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName(sheetName);
     if (!sheet) {
@@ -533,3 +533,110 @@ function getFieldKeyFromHeader(header) {
   
   return requiredFieldMapping[header] || null;
 }
+
+/**
+ * Google Apps Script for Inventory Data Management
+ * Fetches and processes inventory withdrawal logs and form responses
+ */
+
+// Configuration
+const SHEET_NAMES = {
+  WITHDRAWAL_LOGS: 'Withdrawal Logs',
+  FORM_RESPONSES: 'Form Responses',
+  EDIT_LOGS: 'Edit Logs'
+};
+
+/**
+ * Get withdrawal logs with optional QR Code filtering
+ * @param {string|null} qrCode - QR Code to filter by. If null/undefined, returns all data
+ * @returns {Array} Array of withdrawal log objects, empty array if no matches found
+ */
+function getWithdrawalLogs(qrCode = null) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.WITHDRAWAL_LOGS);
+    
+    if (!sheet) {
+      throw new Error(`Sheet "${SHEET_NAMES.WITHDRAWAL_LOGS}" not found`);
+    }
+    
+    // Get the last row and column with data
+    const lastRow = sheet.getLastRow();
+    const lastColumn = sheet.getLastColumn();
+    
+    if (lastRow <= 1) {
+      return []; // No data rows
+    }
+    
+    // Get headers first to find QR Code column index
+    const headerRange = sheet.getRange(1, 1, 1, lastColumn);
+    const headers = headerRange.getValues()[0];
+    
+    // Find QR Code column index (should be column 2 based on your sample)
+    const qrCodeColumnIndex = headers.findIndex(header => 
+      header.toString().toLowerCase().replace(/\s+/g, '').includes('qrcode')
+    );
+    
+    if (qrCode && qrCodeColumnIndex === -1) {
+      console.warn('QR Code column not found, returning empty array');
+      return [];
+    }
+    
+    // Get all data including headers
+    const range = sheet.getRange(1, 1, lastRow, lastColumn);
+    const values = range.getValues();
+    
+    // Convert data to array of objects with filtering
+    const data = [];
+    
+    for (let i = 1; i < values.length; i++) {
+      const row = values[i];
+      
+      // Early exit: Skip row if QR Code filter is provided and doesn't match exactly
+      if (qrCode && String(row[qrCodeColumnIndex]).trim() !== String(qrCode).trim()) {
+        continue;
+      }
+      
+      const rowData = {};
+      
+      // Process each column
+      headers.forEach((header, index) => {
+        let value = row[index];
+        
+        // Format timestamp if it's the timestamp column
+        if (header.toLowerCase().includes('timestamp') && value instanceof Date) {
+          value = Utilities.formatDate(value, Session.getScriptTimeZone(), 'MM/dd/yyyy HH:mm:ss');
+        }
+        
+        // Convert all values to strings and handle null/undefined
+        if (value === null || value === undefined || value === '') {
+          value = '';
+        } else {
+          value = String(value);
+        }
+        
+        // Create standardized property name
+        rowData[header.toUpperCase().replace(/\s+/g, '_')] = value;
+      });
+      
+      data.push(rowData);
+    }
+    
+    console.log(`Fetched ${data.length} withdrawal logs${qrCode ? ` for QR Code: ${qrCode}` : ''}`);
+    return data;
+    
+  } catch (error) {
+    console.error('Error fetching withdrawal logs:', error);
+    throw error;
+  }
+}
+
+// Usage examples:
+
+// Get all withdrawal logs
+// const allLogs = getWithdrawalLogs();
+
+// Get logs for specific QR Code (exact match only)
+// const specificLogs = getWithdrawalLogs("Sbn19-5-6-05-18-2025-O");
+
+// If no matches found, returns empty array []
+// const noMatches = getWithdrawalLogs("NonExistentQRCode");
