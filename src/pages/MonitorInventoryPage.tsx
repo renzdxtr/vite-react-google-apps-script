@@ -8,7 +8,8 @@ import InventoryLocationChart from "@/components/monitor-inventory/seed-storage/
 import InventoryProgramChart from "@/components/monitor-inventory/seed-storage/InventoryByProgramPieChart";
 import SeedClassBreakdownChart from "@/components/monitor-inventory/seed-storage/SeedClassBreakdownBarChart";
 import GerminationRateChart from "@/components/monitor-inventory/seed-storage/CropGerminationRateByLotMultipleLineChart";
-import SeedInventoryTable from "@/components/monitor-inventory/seed-storage/SeedInventoryTable";
+
+import SeedInventoryTable from "@/components/dashboard/SeedInventoryTable";
 
 import PM_SeedStorageBarChart from "@/components/monitor-inventory/planting-materials/SeedStorageBarChart";
 import PM_InventoryLocationChart from "@/components/monitor-inventory/planting-materials/InventoryByLocationPieChart";
@@ -69,7 +70,7 @@ export default function MonitorInventoryPage() {
                 </div>
 
                 <div className="mt-4">
-                    <PM_SeedInventoryTable data={plantingMaterialsData} />
+                    <SeedInventoryTable data={plantingMaterialsData} />
                 </div>
             </div>
           </TabsContent>
