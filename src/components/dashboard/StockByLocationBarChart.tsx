@@ -6,12 +6,15 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { type ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip } from "@/components/ui/chart"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { SAMPLE_DATA_INVENTORY } from "@/lib/constants";
 
 // Color palette for different crops
 const colors = ["#4CAF50", "#388E3C", "#FF9800", "#F57C00", "#1976D2", "#1565C0"]
 
-export default function StockByLocationBarChart() {
+interface StockByLocationBarChartProps {
+  data: any[]
+}
+
+export default function StockByLocationBarChart({ data }: StockByLocationBarChartProps) {
   const [dateFilter, setDateFilter] = React.useState("all")
   const [mounted, setMounted] = React.useState(false)
 
@@ -22,17 +25,17 @@ export default function StockByLocationBarChart() {
 
   // Get unique crops for chart config
   const allCrops = React.useMemo(() => {
-    return [...new Set(SAMPLE_DATA_INVENTORY.map((item) => item.CROP))]
-  }, [])
+    return [...new Set(data.map((item) => item.CROP))]
+  }, [data])
 
   // Process data to group by location and stack by crop
   const processedData = React.useMemo(() => {
     // Filter data based on stored date (monthly)
-    let filteredData = SAMPLE_DATA_INVENTORY
+    let filteredData = data
 
     if (dateFilter !== "all") {
       const [year, month] = dateFilter.split("-")
-      filteredData = SAMPLE_DATA_INVENTORY.filter((item) => {
+      filteredData = data.filter((item) => {
         const storedDate = new Date(item.STORED_DATE)
         const itemYear = storedDate.getFullYear().toString()
         const itemMonth = (storedDate.getMonth() + 1).toString().padStart(2, "0")
@@ -72,7 +75,7 @@ export default function StockByLocationBarChart() {
     )
 
     return Object.values(locationData).sort((a: any, b: any) => b.totalVolume - a.totalVolume)
-  }, [dateFilter, allCrops])
+  }, [dateFilter, allCrops, data])
 
   // Generate chart config
   const chartConfig = React.useMemo(() => {
@@ -89,14 +92,14 @@ export default function StockByLocationBarChart() {
   // Get unique months for filter options
   const availableMonths = React.useMemo(() => {
     const months = new Set<string>()
-    SAMPLE_DATA_INVENTORY.forEach((item) => {
+    data.forEach((item) => {
       const date = new Date(item.STORED_DATE)
       const year = date.getFullYear()
       const month = (date.getMonth() + 1).toString().padStart(2, "0")
       months.add(`${year}-${month}`)
     })
     return Array.from(months).sort()
-  }, [])
+  }, [data])
 
   // Custom tooltip component
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -155,14 +158,14 @@ export default function StockByLocationBarChart() {
   if (!mounted) {
     return (
       <Card className="w-full">
-        <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
-          <div className="grid flex-1 gap-1 text-center sm:text-left">
-            <CardTitle>Stock by Location</CardTitle>
-            <CardDescription>Loading chart...</CardDescription>
+        <CardHeader className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-2 border-b py-4">
+          <div className="flex-1">
+            <CardTitle className="text-lg">Stock by Location</CardTitle>
+            <CardDescription className="text-sm">Loading chart...</CardDescription>
           </div>
         </CardHeader>
-        <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-          <div className="h-[400px] w-full flex items-center justify-center">
+        <CardContent className="p-4">
+          <div className="h-[300px] sm:h-[400px] w-full flex items-center justify-center">
             <p className="text-muted-foreground">Loading...</p>
           </div>
         </CardContent>
@@ -172,16 +175,16 @@ export default function StockByLocationBarChart() {
 
   return (
     <Card className="w-full">
-      <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
-        <div className="grid flex-1 gap-1 text-center sm:text-left">
-          <CardTitle>Stock by Location</CardTitle>
-          <CardDescription>
+      <CardHeader className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-2 border-b py-4">
+        <div className="flex-1">
+          <CardTitle className="text-lg">Stock by Location</CardTitle>
+          <CardDescription className="text-sm">
             Stacked seed volume by storage location and crop type
             {dateFilter !== "all" && ` - ${formatMonth(dateFilter)}`}
           </CardDescription>
         </div>
         <Select value={dateFilter} onValueChange={setDateFilter}>
-          <SelectTrigger className="w-[180px] rounded-lg sm:ml-auto" aria-label="Filter by month">
+          <SelectTrigger className="w-full sm:w-[180px] rounded-lg" aria-label="Filter by month">
             <SelectValue placeholder="Filter by month" />
           </SelectTrigger>
           <SelectContent className="rounded-xl">
@@ -196,8 +199,8 @@ export default function StockByLocationBarChart() {
           </SelectContent>
         </Select>
       </CardHeader>
-      <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-        <ChartContainer config={chartConfig} className="aspect-auto h-[400px] w-full">
+      <CardContent className="p-4">
+        <ChartContainer config={chartConfig} className="aspect-auto h-[300px] sm:h-[400px] w-full">
           <BarChart
             data={processedData}
             margin={{
@@ -217,10 +220,17 @@ export default function StockByLocationBarChart() {
               textAnchor="end"
               height={80}
               interval={0}
+              fontSize={12}
             />
-            <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `${value}g`} />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tickFormatter={(value) => `${value}g`}
+              fontSize={12}
+            />
             <ChartTooltip content={<CustomTooltip />} />
-            <ChartLegend content={<ChartLegendContent />} />
+            <ChartLegend content={<ChartLegendContent />} wrapperStyle={{ fontSize: "12px" }} />
             {allCrops.map((crop, index) => (
               <Bar
                 key={crop}

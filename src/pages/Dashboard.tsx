@@ -1,90 +1,102 @@
-import React, { useState, useMemo } from 'react';
-import { Card } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useAllSeedDetails } from "@/hooks/useSeedDetails";
+"use client"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-import AlertsPanel from '@/components/dashboard/AlertsPanel';
-import KeyMetricsCards from '@/components/dashboard/KeyMetricsCards';
-import StockBySeedClassPieChart from '@/components/dashboard/StockBySeedClassPieChart';
-import StockByLocationBarChart from '@/components/dashboard/StockByLocationBarChart';
-import WithdrawalTrendLineChart from '@/components/dashboard/WithdrawalTrendLineChart';
-import SummaryTable from '@/components/dashboard/SummaryTable';
+import DashboardLayout from "@/components/dashboard/DashboardLayout"
+import AlertsPanel from "@/components/dashboard/AlertsPanel"
+import KeyMetricsCards from "@/components/dashboard/KeyMetricsCards"
+import StockBySeedClassPieChart from "@/components/dashboard/StockBySeedClassPieChart"
+import StockByLocationBarChart from "@/components/dashboard/StockByLocationBarChart"
+// import SummaryTable from "@/components/SummaryTable"
+// import SeedInventoryTable from "@/components/SeedInventoryTable"
+import WithdrawalTrendLineChart from "@/components/dashboard/WithdrawalTrendLineChart"
+// import WithdrawalAnalysisChart from "@/components/WithdrawalAnalysisChart"
+// import WithdrawalByCropChart from "@/components/WithdrawalByCropChart"
+// import ExportReporting from "@/components/ExportReporting"
+// import ReleaseLogTable from "@/components/ReleaseLogTable"
 
-import { SAMPLE_DATA_INVENTORY } from "@/lib/constants";
-import { SAMPLE_WITHDRAWAL } from "@/lib/constants";
+// Import sample data and calculation functions
+import { SAMPLE_DATA_INVENTORY, SAMPLE_WITHDRAWAL } from "@/lib/constants"
+import {
+  joinInventoryWithWithdrawals,
+  calculateTodaysWithdrawalsByType,
+  calculateCurrentStock,
+  calculateLowStockAlerts,
+  calculateInventoryStatus,
+  generateSystemAlerts,
+  processReleaseLogData,
+} from "@/lib/data-calculations"
 
-const mockMetrics = {
-    todayWithdrawals: {
-        seedStorage: { value: 10000, unit: "g" },
-        plantingMaterials: { value: 50, unit: "pcs" },
-    },
-    currentStock: {
-        seedStorage: { value: 35000, unit: "g" },
-        plantingMaterials: { value: 900, unit: "pcs" },
-    },
-    lowStockAlerts: {
-        seedStorage: { value: 0, unit: "" },
-        plantingMaterials: { value: 0, unit: "" },
-    },
+// Process the data
+const joinedData = joinInventoryWithWithdrawals(SAMPLE_DATA_INVENTORY, SAMPLE_WITHDRAWAL)
+const releaseLogData = processReleaseLogData(SAMPLE_WITHDRAWAL, SAMPLE_DATA_INVENTORY)
+
+// Calculate metrics using actual data
+const todaysWithdrawals = calculateTodaysWithdrawalsByType(joinedData)
+const currentStock = calculateCurrentStock(joinedData)
+const lowStockAlerts = calculateLowStockAlerts(joinedData)
+
+const metrics = {
+  todayWithdrawals: todaysWithdrawals,
+  currentStock: currentStock,
+  lowStockAlerts: lowStockAlerts,
 }
-  
-const mockWithdrawalData = [
-    { date: "May 2025", volume: 6035 },
-    { date: "Jun 2025", volume: 1010 },
-]
-  
-const mockSummaryData = [
-    { id: 1, optionValue: "ABC-123", remainingVolume: 500, withdrawnYTD: 100, status: "OK" },
-    { id: 2, optionValue: "XYZ-456", remainingVolume: 50, withdrawnYTD: 200, status: "Low" },
-    { id: 3, optionValue: "PQR-789", remainingVolume: 1000, withdrawnYTD: 50, status: "OK" },
-    { id: 4, optionValue: "LMN-012", remainingVolume: 20, withdrawnYTD: 300, status: "Low" },
-]
-  
-const mockAlerts = [
-    { type: "low-stock", message: "Maize Variety A below threshold" },
-    { type: "inventory-check", message: "Warehouse B requires inventory check" },
-    { type: "sync", message: "Pending sync actions exceeding limit" },
-]
-  
-export default function Dashboard() {
 
+// Generate alerts from actual data
+const alerts = generateSystemAlerts(joinedData)
+
+// Convert joined data to summary table format
+const summaryData = joinedData.map((item, index) => ({
+  id: index + 1,
+  optionValue: `${item.CROP} - ${item.VARIETY}`,
+  remainingVolume: item.remainingVolume,
+  withdrawnYTD: item.totalWithdrawn,
+  status: calculateInventoryStatus(item),
+  dateCreated: item.STORED_DATE,
+  expiryDate: item.HARVEST_DATE,
+  lastWithdrawal: item.lastWithdrawal?.TIMESTAMP || "No withdrawals",
+  riskLevel: item.SEED_CLASS,
+}))
+
+export default function DashboardPage() {
     return (
-        <div className="container mx-auto py-4 max-w-3xl">
-            <div className="space-y-1 sm:space-y-2">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Dashboard and Summary Reports</h1>
-                <p className="text-sm text-muted-foreground">Overview of seed inventory and system status</p>
-            </div>
-          <div className="space-y-4">
-            <Tabs defaultValue="seed-storage">
-              <TabsList>
-                <TabsTrigger value="seed-storage">Seed Storage</TabsTrigger>
-                <TabsTrigger value="planting-materials">Planting Materials</TabsTrigger>
-              </TabsList>
-              
-              {/* Seed Storage Tab */}
-              <TabsContent value="seed-storage">
-                <AlertsPanel alerts={mockAlerts} />
-                <div className="max-w-full overflow-x-auto">
-                    <div className="grid gap-4">
-                        <KeyMetricsCards metrics={mockMetrics} />
-                        <StockBySeedClassPieChart />
-                        <StockByLocationBarChart />
-                        <WithdrawalTrendLineChart data={mockWithdrawalData} />
-                    </div>
-    
-                    <div className="mt-4">
-                    <SummaryTable data={mockSummaryData} title="Inventory Summary" />
-                    </div>
-                </div>
-              </TabsContent>
-              
-              {/* Planting Materials Tab */}
-              <TabsContent value="planting-materials">
-
-              </TabsContent>
-            </Tabs>
+      <DashboardLayout title="Dashboard and Summary Reports" description="Overview of seed inventory and system status">
+        <Tabs defaultValue="overview">
+          <div className="w-full mt-4 mb-4">
+            <TabsList className="w-full p-1 h-auto grid grid-cols-2 gap-1 md:flex md:overflow-x-auto md:h-10">
+              <TabsTrigger className="text-xs sm:text-sm whitespace-nowrap h-auto py-2" value="overview">
+                Overview
+              </TabsTrigger>
+              <TabsTrigger className="text-xs sm:text-sm whitespace-nowrap h-auto py-2" value="analytics">
+                Analytics
+              </TabsTrigger>
+              <TabsTrigger className="text-xs sm:text-sm whitespace-nowrap h-auto py-2" value="inventory">
+                Inventory
+              </TabsTrigger>
+              <TabsTrigger className="text-xs sm:text-sm whitespace-nowrap h-auto py-2" value="release-log">
+                Release Log
+              </TabsTrigger>
+              <TabsTrigger className="text-xs sm:text-sm whitespace-nowrap h-auto py-2 col-span-2 md:col-span-1" value="export">
+                Export & Reporting
+              </TabsTrigger>
+            </TabsList>
           </div>
-        </div>
-      );
-}
+  
+          {/* Overview Tab */}
+          <TabsContent value="overview">
+            <AlertsPanel alerts={alerts} />
+            <div className="max-w-full overflow-x-auto">
+              <div className="grid gap-4">
+                <KeyMetricsCards metrics={metrics} />
+                <div data-chart-id="stockBySeedClass" className="min-w-0">
+                  <StockBySeedClassPieChart data={joinedData} />
+                </div>
+                <div data-chart-id="withdrawalTrend" className="min-w-0">
+                  <WithdrawalTrendLineChart data={SAMPLE_WITHDRAWAL} />
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </DashboardLayout>
+    )
+  }

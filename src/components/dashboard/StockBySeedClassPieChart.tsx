@@ -6,12 +6,15 @@ import { Label, Pie, PieChart } from "recharts"
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { type ChartConfig, ChartContainer, ChartTooltip } from "@/components/ui/chart"
-import { SAMPLE_DATA_INVENTORY } from "@/lib/constants";
 
 // Color palette for different seed classes
 const colors = ["#4CAF50", "#388E3C", "#FF9800", "#F57C00", "#1976D2", "#1565C0"]
 
-export default function StockBySeedClassPieChart() {
+interface StockBySeedClassPieChartProps {
+  data: any[]
+}
+
+export default function StockBySeedClassPieChart({ data }: StockBySeedClassPieChartProps) {
   const [mounted, setMounted] = React.useState(false)
 
   // Ensure component is mounted before rendering chart
@@ -21,7 +24,7 @@ export default function StockBySeedClassPieChart() {
 
   // Process data to group by seed class and sum volumes
   const chartData = React.useMemo(() => {
-    const seedClassData = SAMPLE_DATA_INVENTORY.reduce(
+    const seedClassData = data.reduce(
       (acc, item) => {
         const seedClass = item.SEED_CLASS
         if (!acc[seedClass]) {
@@ -53,7 +56,7 @@ export default function StockBySeedClassPieChart() {
         fill: colors[index % colors.length],
       }))
       .sort((a, b) => b.volume - a.volume)
-  }, [])
+  }, [data])
 
   // Generate chart config
   const chartConfig = React.useMemo(() => {
@@ -110,13 +113,13 @@ export default function StockBySeedClassPieChart() {
   // Don't render chart until component is mounted
   if (!mounted) {
     return (
-      <Card className="flex flex-col">
+      <Card className="w-full">
         <CardHeader className="items-center pb-0">
-          <CardTitle>Stock by Seed Class</CardTitle>
-          <CardDescription>Loading chart...</CardDescription>
+          <CardTitle className="text-lg">Stock by Seed Class</CardTitle>
+          <CardDescription className="text-sm">Loading chart...</CardDescription>
         </CardHeader>
-        <CardContent className="flex-1 pb-0">
-          <div className="mx-auto aspect-square max-h-[250px] flex items-center justify-center">
+        <CardContent className="flex-1 pb-0 p-4">
+          <div className="mx-auto aspect-square max-h-[200px] sm:max-h-[250px] flex items-center justify-center">
             <p className="text-muted-foreground">Loading...</p>
           </div>
         </CardContent>
@@ -125,25 +128,25 @@ export default function StockBySeedClassPieChart() {
   }
 
   return (
-    <Card className="flex flex-col">
+    <Card className="w-full">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Stock by Seed Class</CardTitle>
-        <CardDescription>Seed volume distribution by classification</CardDescription>
+        <CardTitle className="text-lg">Stock by Seed Class</CardTitle>
+        <CardDescription className="text-sm">Seed volume distribution by classification</CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 pb-0">
-        <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[250px]">
+      <CardContent className="flex-1 pb-0 p-4">
+        <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[200px] sm:max-h-[250px]">
           <PieChart>
             <ChartTooltip cursor={false} content={<CustomTooltip />} />
-            <Pie data={chartData} dataKey="volume" nameKey="seedClass" innerRadius={60} strokeWidth={5}>
+            <Pie data={chartData} dataKey="volume" nameKey="seedClass" innerRadius={50} strokeWidth={5}>
               <Label
                 content={({ viewBox }) => {
                   if (viewBox && "cx" in viewBox && "cy" in viewBox) {
                     return (
                       <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
-                        <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-3xl font-bold">
+                        <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-2xl sm:text-3xl font-bold">
                           {totalVolume.toLocaleString()}
                         </tspan>
-                        <tspan x={viewBox.cx} y={(viewBox.cy || 0) + 24} className="fill-muted-foreground">
+                        <tspan x={viewBox.cx} y={(viewBox.cy || 0) + 20} className="fill-muted-foreground text-sm">
                           Total Grams
                         </tspan>
                       </text>
@@ -155,11 +158,11 @@ export default function StockBySeedClassPieChart() {
           </PieChart>
         </ChartContainer>
       </CardContent>
-      <CardFooter className="flex-col gap-2 text-sm">
+      <CardFooter className="flex-col gap-2 text-sm p-4">
         <div className="flex items-center gap-2 font-medium leading-none">
           {chartData.length} seed classes active <TrendingUp className="h-4 w-4" />
         </div>
-        <div className="leading-none text-muted-foreground">
+        <div className="leading-none text-muted-foreground text-center">
           Showing total seed volume across all seed classifications
         </div>
       </CardFooter>
