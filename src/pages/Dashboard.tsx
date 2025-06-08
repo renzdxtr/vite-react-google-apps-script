@@ -6,13 +6,13 @@ import AlertsPanel from "@/components/dashboard/AlertsPanel"
 import KeyMetricsCards from "@/components/dashboard/KeyMetricsCards"
 import StockBySeedClassPieChart from "@/components/dashboard/StockBySeedClassPieChart"
 import StockByLocationBarChart from "@/components/dashboard/StockByLocationBarChart"
-// import SummaryTable from "@/components/SummaryTable"
+import SummaryTable from "@/components/dashboard/SummaryTable"
 // import SeedInventoryTable from "@/components/SeedInventoryTable"
 import WithdrawalTrendLineChart from "@/components/dashboard/WithdrawalTrendLineChart"
 import WithdrawalAnalysisChart from "@/components/dashboard/WithdrawalAnalysisChart"
 import WithdrawalByCropChart from "@/components/dashboard/WithdrawalByCropChart"
 // import ExportReporting from "@/components/ExportReporting"
-// import ReleaseLogTable from "@/components/ReleaseLogTable"
+//import ReleaseLogTable from "@/components/dashboard/ReleaseLogTable"
 
 // Import sample data and calculation functions
 import { SAMPLE_DATA_INVENTORY, SAMPLE_WITHDRAWAL } from "@/lib/constants"
@@ -113,6 +113,16 @@ export default function DashboardPage() {
                             <div data-chart-id="withdrawalTrend" className="min-w-0">
                                 <WithdrawalTrendLineChart data={SAMPLE_WITHDRAWAL} />
                             </div>
+                        </div>
+                    </div>
+                </TabsContent>
+
+                {/* Inventory Tab */}
+                <TabsContent value="inventory">
+                    <div className="max-w-full overflow-x-auto space-y-6">
+                        {/* Summary Table */}
+                        <div className="min-w-0">
+                            <SummaryTable data={summaryData} title="Inventory Summary" />
                         </div>
                     </div>
                 </TabsContent>
