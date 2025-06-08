@@ -12,7 +12,7 @@ import WithdrawalTrendLineChart from "@/components/dashboard/WithdrawalTrendLine
 import WithdrawalAnalysisChart from "@/components/dashboard/WithdrawalAnalysisChart"
 import WithdrawalByCropChart from "@/components/dashboard/WithdrawalByCropChart"
 // import ExportReporting from "@/components/ExportReporting"
-//import ReleaseLogTable from "@/components/dashboard/ReleaseLogTable"
+import ReleaseLogTable from "@/components/dashboard/ReleaseLogTable"
 
 // Import sample data and calculation functions
 import { SAMPLE_DATA_INVENTORY, SAMPLE_WITHDRAWAL } from "@/lib/constants"
@@ -126,6 +126,15 @@ export default function DashboardPage() {
                         </div>
                     </div>
                 </TabsContent>
+
+            {/* Release Log Tab */}
+        <TabsContent value="release-log">
+          <div className="max-w-full overflow-x-auto">
+            <div className="min-w-0">
+              <ReleaseLogTable data={releaseLogData} />
+            </div>
+          </div>
+        </TabsContent>
 
             </Tabs>
         </DashboardLayout>
