@@ -11,6 +11,9 @@ import StockByLocationBarChart from '@/components/dashboard/StockByLocationBarCh
 import WithdrawalTrendLineChart from '@/components/dashboard/WithdrawalTrendLineChart';
 import SummaryTable from '@/components/dashboard/SummaryTable';
 
+import { SAMPLE_DATA_INVENTORY } from "@/lib/constants";
+import { SAMPLE_WITHDRAWAL } from "@/lib/constants";
+
 const mockMetrics = {
     todayWithdrawals: {
         seedStorage: { value: 10000, unit: "g" },
