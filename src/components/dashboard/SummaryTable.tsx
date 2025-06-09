@@ -534,7 +534,7 @@ export default function EnhancedSummaryTable({ data, title = "Enhanced Summary T
                           <div className="space-y-1">
                             <div className="font-medium text-sm leading-tight">{item.optionValue}</div>
                             <div className="text-xs text-muted-foreground">
-                              Variety: {item.riskLevel} | Thresholds: {status.veryLowVolumeThreshold}g /{" "}
+                              Seed Class: {item.riskLevel} Thresholds: {status.veryLowVolumeThreshold}g /{" "}
                               {status.lowVolumeThreshold}g
                             </div>
                           </div>
