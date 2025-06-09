@@ -1,5 +1,5 @@
 // App.js
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { routes } from "@/routes";
 import "./App.css";
@@ -19,6 +19,8 @@ function App() {
             {routes.map((route) => (
               <Route path={route.url} element={<route.component />} key={route.title} />
             ))}
+            {/* Fallback route for undefined paths */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           {/* Conditionally render FullscreenMenu based on isMenuOpen */}
           {isMenuOpen && (
