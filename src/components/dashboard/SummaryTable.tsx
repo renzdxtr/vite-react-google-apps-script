@@ -124,6 +124,40 @@ export default function EnhancedSummaryTable({ data, title = "Enhanced Summary T
     return CROP_VOLUME_THRESHOLDS[cropName as keyof typeof CROP_VOLUME_THRESHOLDS] || DEFAULT_THRESHOLDS
   }
 
+  // Determine item status based on crop-specific volume thresholds
+  const getItemStatus = (
+    volume: number,
+    daysSinceWithdrawal: number,
+    daysUntilExpiry: number,
+    withdrawnYTD: number,
+    cropName: string,
+  ) => {
+    const [lowVolumeThreshold, veryLowVolumeThreshold] = getCropThresholds(cropName)
+
+    const isVeryLowVolume = volume < veryLowVolumeThreshold
+    const isLowVolume = volume < lowVolumeThreshold
+    const isAging = daysSinceWithdrawal > AGING_THRESHOLD
+    const isCriticalAging = daysSinceWithdrawal > CRITICAL_AGING_THRESHOLD
+    const isNearExpiry = daysUntilExpiry < EXPIRY_WARNING_THRESHOLD
+    const isHighWithdrawal = withdrawnYTD > HIGH_WITHDRAWAL_THRESHOLD
+
+    const isCritical = isVeryLowVolume || isCriticalAging || (daysUntilExpiry < 7 && daysUntilExpiry > 0)
+    const isWarning = isLowVolume || isAging || isNearExpiry || isHighWithdrawal
+
+    return {
+      isVeryLowVolume,
+      isLowVolume,
+      isAging,
+      isCriticalAging,
+      isNearExpiry,
+      isHighWithdrawal,
+      isCritical,
+      isWarning,
+      lowVolumeThreshold,
+      veryLowVolumeThreshold,
+    }
+  }
+
   // Calculate withdrawn amount based on date range or default to YTD
   const getWithdrawnAmount = React.useCallback(
     (item: any) => {
@@ -269,40 +303,6 @@ export default function EnhancedSummaryTable({ data, title = "Enhanced Summary T
         maximumFractionDigits: 1,
       }).format(weight) + "g"
     )
-  }
-
-  // Determine item status based on crop-specific volume thresholds
-  const getItemStatus = (
-    volume: number,
-    daysSinceWithdrawal: number,
-    daysUntilExpiry: number,
-    withdrawnYTD: number,
-    cropName: string,
-  ) => {
-    const [lowVolumeThreshold, veryLowVolumeThreshold] = getCropThresholds(cropName)
-
-    const isVeryLowVolume = volume < veryLowVolumeThreshold
-    const isLowVolume = volume < lowVolumeThreshold
-    const isAging = daysSinceWithdrawal > AGING_THRESHOLD
-    const isCriticalAging = daysSinceWithdrawal > CRITICAL_AGING_THRESHOLD
-    const isNearExpiry = daysUntilExpiry < EXPIRY_WARNING_THRESHOLD
-    const isHighWithdrawal = withdrawnYTD > HIGH_WITHDRAWAL_THRESHOLD
-
-    const isCritical = isVeryLowVolume || isCriticalAging || (daysUntilExpiry < 7 && daysUntilExpiry > 0)
-    const isWarning = isLowVolume || isAging || isNearExpiry || isHighWithdrawal
-
-    return {
-      isVeryLowVolume,
-      isLowVolume,
-      isAging,
-      isCriticalAging,
-      isNearExpiry,
-      isHighWithdrawal,
-      isCritical,
-      isWarning,
-      lowVolumeThreshold,
-      veryLowVolumeThreshold,
-    }
   }
 
   // Generate page numbers for pagination
