@@ -96,6 +96,12 @@ export const PIN_CODES = [
   '3910'
 ];
 
+export const USER_ROLES = {
+  '1120': 'Procurement Team',
+  '1931': 'Admin',
+  '3910': 'Officer 1'
+};
+
 export const DROPDOWN_CHOICES = {
   'INVENTORY': ['Seed Storage', 'Planting Materials'],
   'SEED_CLASS': ['Breeder', 'Foundation', 'Registered', 'Certified', 'NA', 'Others'],

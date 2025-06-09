@@ -152,11 +152,17 @@ export const SeedManagementContent: React.FC = () => {
   };
 
   // Add this function to your component
+  // ...
+  // Add a state to store the verified PIN
+  const [verifiedPin, setVerifiedPin] = useState<string>('');
+  
+  // Modify the handlePinSubmit function to store the verified PIN
   const handlePinSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setPinError(null);
-
+  
     if (PIN_CODES.includes(pin)) {
+      setVerifiedPin(pin); // Store the verified PIN
       setPin('');
       setPinError(null);
       setPinAttempts(0);
@@ -296,6 +302,7 @@ export const SeedManagementContent: React.FC = () => {
         qrCode: (seedDetails as SeedDetailsType)?.CODE,
         oldData: seedDetails as SeedDetailsType,
         newData: processedDetails,
+        pinCode: verifiedPin // Add the PIN code to the request
       });
 
       if (response.success) {
@@ -303,6 +310,7 @@ export const SeedManagementContent: React.FC = () => {
         setEditedDetails({});
         setFieldErrors({});
         setHasUnsavedChanges(false);
+        setVerifiedPin(''); // Reset the verified PIN
         await refetch();
         setEditSuccess('Details updated successfully');
       } else {

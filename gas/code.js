@@ -302,6 +302,13 @@ function updateSeedVolume(data) {
   }
 }
 
+// Add USER_ROLES at the top of the file with FRS_COL_NAMES
+const USER_ROLES = {
+  '1120': 'Procurement Team',
+  '1931': 'Admin',
+  '3910': 'Officer 1'
+};
+
 // Add FRS_COL_NAMES at the top of the file
 const FRS_COL_NAMES = {
   TIMESTAMP: "Timestamp",
@@ -333,7 +340,7 @@ const FRS_COL_NAMES = {
 
 function updateSeedDetails(data) {
   try {
-    const { qrCode, oldData, newData } = data;
+    const { qrCode, oldData, newData, pinCode } = data; // Extract pinCode
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const formSheet = ss.getSheetByName(SHEET_NAMES.FORM_RESPONSES);
     const logsSheet = ss.getSheetByName(SHEET_NAMES.EDIT_LOGS);
@@ -387,21 +394,22 @@ function updateSeedDetails(data) {
       formSheet.getRange(rowIndex, lastModifiedCol + 1).setValue(timestamp);
     }
 
-    // Log the changes in Inventory Logs
+    // Get user role based on PIN code
+    const userRole = USER_ROLES[pinCode] || 'Unknown User';
+
+    // Log the changes in Inventory Logs with user information
     logsSheet.appendRow([
       timestamp,                  // Timestamp
       qrCode,                     // QR Code
       JSON.stringify(oldData),    // Previous Value
       JSON.stringify(newData),    // New Value
-      ""                          // User
+      userRole                    // User role based on PIN code
     ]);
 
     return {
       success: true,
-      message: "Successfully updated seed details",
-      data: changedFields
+      message: "Seed details updated successfully"
     };
-    
   } catch (error) {
     console.error("Error in updateSeedDetails:", error);
     return {

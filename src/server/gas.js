@@ -131,7 +131,7 @@ export function updateSeedDetails(data) {
             error: msg
           });
         })
-        .updateSeedDetails(data);
+        .updateSeedDetails(data); // data now includes pinCode
     });
   }
   // Return mock response for development
