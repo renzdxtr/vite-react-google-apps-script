@@ -28,6 +28,11 @@ import { SeedDetailsTable } from '@/components/SeedDetailsTable';
 
 import { PIN_CODES } from '@/lib/constants';
 
+import ReleaseLogTable from "@/components/ReleaseLogTable"
+import { useAllWithdrawalDetails } from "@/hooks/useWithdrawalDetails"
+import { transformWithdrawalData } from '@/lib/withdrawal-table-calculations'
+
+
 /**
  * validateField: coerce any rawValue → string, then run:
  *  1) Required‐field check (string.trim() === '')
@@ -71,6 +76,11 @@ export const SeedManagementContent: React.FC = () => {
 
   // ─── Fetching state via custom hook ────────────────────────────────────────
   const { seedDetails, isLoading, error, refetch } = useSeedDetails(qrCode);
+  const { withdrawalDetails: withdrawalData, isLoading: isLoadingWithdrawals } = useAllWithdrawalDetails(qrCode);
+
+  // Only process data when both are loaded
+  const loading = isLoading || isLoadingWithdrawals;
+  const transformedWithdrawalData = transformWithdrawalData(withdrawalData, seedDetails)
 
   // ─── Withdrawal state ──────────────────────────────────────────────────────
   const [withdrawAmount, setWithdrawAmount] = useState<number | ''>('');
@@ -796,6 +806,12 @@ export const SeedManagementContent: React.FC = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* ─── Release Logs (Withdrawal) Section ───────────────────────────── */}
+        <Card className="shadow-md">
+            <ReleaseLogTable data={transformedWithdrawalData} />
+        </Card>
+
       </Card>
 
       {/* ─── Back to Scan button ──────────────────────────────────────────────── */}
