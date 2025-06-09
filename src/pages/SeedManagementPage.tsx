@@ -76,8 +76,12 @@ export const SeedManagementContent: React.FC = () => {
 
   // ─── Fetching state via custom hook ────────────────────────────────────────
   const { seedDetails, isLoading, error, refetch } = useSeedDetails(qrCode);
-  const { withdrawalDetails: withdrawalData, isLoading: isLoadingWithdrawals } = useAllWithdrawalDetails(qrCode);
-
+  const { 
+    withdrawalDetails: withdrawalData, 
+    isLoading: isLoadingWithdrawals,
+    refetch: refetchWithdrawals 
+  } = useAllWithdrawalDetails(qrCode);
+  
   // Only process data when both are loaded
   const loading = isLoading || isLoadingWithdrawals;
   const transformedWithdrawalData = transformWithdrawalData(withdrawalData, seedDetails)
@@ -149,7 +153,11 @@ export const SeedManagementContent: React.FC = () => {
           setWithdrawAmount('');
           setWithdrawReason('');
           setIsConfirming(false);
-          await refetch();
+          // Refetch both seed details and withdrawal history
+          await Promise.all([
+            refetch(),
+            refetchWithdrawals()
+          ]);
         } else {
           setWithdrawalError(result.message || 'Failed to withdraw seed volume.');
         }
