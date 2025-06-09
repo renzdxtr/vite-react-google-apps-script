@@ -26,7 +26,9 @@ export default function MonitorInventoryPage() {
   const plantingMaterialsData = seedDetails.filter(item => item.INVENTORY === "Planting Materials");
 
   if (isLoading) {
-    return <div className="container mx-auto py-4"><Skeleton className="h-[400px]"/></div>;
+    return <div className="flex items-center justify-center h-64">
+    <p>Loading inventory data...</p>
+  </div>
   }
 
   if (error) {
