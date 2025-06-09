@@ -230,7 +230,16 @@ export default function StockByLocationBarChart({ data }: StockByLocationBarChar
               fontSize={12}
             />
             <ChartTooltip content={<CustomTooltip />} />
-            <ChartLegend content={<ChartLegendContent />} wrapperStyle={{ fontSize: "12px" }} />
+            <ChartLegend 
+              content={<ChartLegendContent className="flex flex-wrap justify-center gap-2" />} 
+              wrapperStyle={{
+                padding: "0px 15px",
+                overflow: "hidden",
+                width: "100%",
+                maxWidth: "100%",
+                fontSize: "10px"
+              }}
+            />
             {allCrops.map((crop, index) => (
               <Bar
                 key={crop}
