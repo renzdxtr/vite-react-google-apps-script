@@ -159,7 +159,7 @@ export function calculateTodaysWithdrawalsByType(joinedData: any[]) {
 
   return {
     seedStorage: { value: Math.round(seedStorageTotal), unit: "g" },
-    plantingMaterials: { value: Math.round(plantingMaterialsTotal), unit: "g" },
+    plantingMaterials: { value: Math.round(plantingMaterialsTotal), unit: "pcs" },
   }
 }
 
@@ -182,7 +182,7 @@ export function calculateCurrentStock(joinedData: any[]) {
 
   return {
     seedStorage: { value: Math.round(seedStorageStock), unit: "g" },
-    plantingMaterials: { value: Math.round(plantingMaterialsStock), unit: "g" },
+    plantingMaterials: { value: Math.round(plantingMaterialsStock), unit: "pcs" },
   }
 }
 
