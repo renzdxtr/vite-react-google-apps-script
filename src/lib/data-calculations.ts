@@ -56,15 +56,13 @@ export function joinInventoryWithWithdrawals(inventory: any[], withdrawals: any[
         ? itemWithdrawals.sort((a, b) => new Date(b.TIMESTAMP).getTime() - new Date(a.TIMESTAMP).getTime())[0]
         : null
 
-    // Calculate remaining volume (original volume - total withdrawn)
-    const remainingVolume = inventoryItem.VOLUME - totalWithdrawn
-
+    // Use VOLUME directly as the remaining volume
     return {
       ...inventoryItem,
       withdrawals: itemWithdrawals,
       totalWithdrawn,
       lastWithdrawal,
-      remainingVolume: Math.max(0, remainingVolume), // Ensure non-negative
+      remainingVolume: inventoryItem.VOLUME, // Use VOLUME directly
     }
   })
 }

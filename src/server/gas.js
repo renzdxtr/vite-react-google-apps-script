@@ -1,4 +1,4 @@
-import { SAMPLE_DATA_INVENTORY } from "@/lib/constants";
+import { SAMPLE_DATA_INVENTORY, SAMPLE_WITHDRAWAL } from "@/lib/constants";
 
 // Check if running in Google Apps Script environment
 const isGoogleAppsScript = typeof google !== 'undefined' && google.script;
@@ -200,5 +200,31 @@ export function fetchAllSeedDetails(inventoryFilter) {
   }
   // Return mock data for development
   return mockFetchAllSeedDetails(inventoryFilter);
+}
+
+// Mock function for development environment
+const mockFetchAllWithdrawalDetails = (qrCode = null) => {
+  console.log("Mock fetchAllWithdrawalDetails called with QR code:", qrCode);
+  // Return mock data for development
+  return Promise.resolve(SAMPLE_WITHDRAWAL);
+};
+
+export function fetchAllWithdrawalDetails(qrCode = null) {
+  if (isGoogleAppsScript) {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler((res) => {
+          console.log("All withdrawal details fetched:", res);
+          resolve(res);
+        })
+        .withFailureHandler((msg) => {
+          console.error("Error fetching all withdrawal details:", msg);
+          reject(msg);
+        })
+        .getWithdrawalLogs(qrCode);
+    });
+  }
+  // Return mock data for development
+  return mockFetchAllWithdrawalDetails(qrCode);
 }
 
