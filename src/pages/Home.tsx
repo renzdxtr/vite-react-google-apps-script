@@ -17,7 +17,7 @@ export default function Home() {
       <p className="text-xl text-gray-700 mb-8 max-w-2xl">
         Efficiently manage and track your seed inventory with precision and ease. Streamline your agricultural operations from storage to planting.
       </p>
-      <Link to="/tasks"> {/* Link to your tasks page or appropriate route */}
+      <Link to="/menu"> {/* Link to menu */}
         <Button size="lg" className="text-lg px-8 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-lg transition duration-300 ease-in-out">
           Get Started →
         </Button>

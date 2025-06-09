@@ -12,6 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { AlertCircle, Search, Filter } from "lucide-react"
 
+import { 
+  AGING_THRESHOLD, 
+  CRITICAL_AGING_THRESHOLD, 
+  EXPIRY_WARNING_THRESHOLD, 
+  HIGH_WITHDRAWAL_THRESHOLD 
+} from "@/lib/constants"
+
 // Commercial‐scale crop volume thresholds: [low_volume_threshold, very_low_volume_threshold] in grams
 const CROP_VOLUME_THRESHOLDS = {
   Tomato: [40.0, 20.0],
@@ -55,10 +62,10 @@ interface SummaryTableProps {
 }
 
 // Global thresholds - easily configurable (keeping for non-volume related checks)
-const AGING_THRESHOLD = 30 // days since last withdrawal
-const CRITICAL_AGING_THRESHOLD = 90 // days since last withdrawal
-const EXPIRY_WARNING_THRESHOLD = 30 // days until expiry
-const HIGH_WITHDRAWAL_THRESHOLD = 100_000 // withdrawn YTD
+// const AGING_THRESHOLD = 30 // days since last withdrawal
+// const CRITICAL_AGING_THRESHOLD = 90 // days since last withdrawal
+// const EXPIRY_WARNING_THRESHOLD = 30 // days until expiry
+// const HIGH_WITHDRAWAL_THRESHOLD = 100_000 // withdrawn YTD
 
 // Pagination options
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]

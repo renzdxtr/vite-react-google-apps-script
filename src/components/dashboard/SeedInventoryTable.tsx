@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
+import { AGING_THRESHOLD, CRITICAL_AGING_THRESHOLD } from "@/lib/constants"
+
 interface SeedStorageTableProps {
   data: any[]
 }
@@ -36,8 +38,8 @@ const CROP_VOLUME_THRESHOLDS = {
 const DEFAULT_THRESHOLDS = [100.0, 50.0] // [low_volume_threshold, very_low_volume_threshold]
 
 // Global thresholds for aging - easily configurable
-const AGING_THRESHOLD = 30 // days
-const CRITICAL_AGING_THRESHOLD = 90 // days
+// const AGING_THRESHOLD = 365 // days
+// const CRITICAL_AGING_THRESHOLD = 1095 // days
 
 // Pagination options
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]

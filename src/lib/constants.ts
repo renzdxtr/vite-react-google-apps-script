@@ -117,3 +117,14 @@ export { SAMPLE_DATA_INVENTORY, SAMPLE_WITHDRAWAL }
 
 export const SEED_STORAGE = SAMPLE_DATA_INVENTORY.filter(item => item.INVENTORY === "Seed Storage")
 export const PLANTING_MATERIALS = SAMPLE_DATA_INVENTORY.filter(item => item.INVENTORY === "Planting Materials")
+
+// Global thresholds for aging - easily configurable
+export const AGING_THRESHOLD = 365 // days
+export const CRITICAL_AGING_THRESHOLD = 912 // days
+
+export const EXPIRY_WARNING_THRESHOLD = 1095 // days until expiry
+export const HIGH_WITHDRAWAL_THRESHOLD = 100_000 // withdrawn YTD
+
+// Planting Materials
+export const LOW_STOCK_PM_THRESHOLD = 100 // pcs
+export const VERY_LOW_STOCK_PM_THRESHOLD = 50 // pcs

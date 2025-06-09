@@ -15,7 +15,6 @@ import PM_SeedStorageBarChart from "@/components/monitor-inventory/planting-mate
 import PM_InventoryLocationChart from "@/components/monitor-inventory/planting-materials/InventoryByLocationPieChart";
 import PM_InventoryProgramChart from "@/components/monitor-inventory/planting-materials/InventoryByProgramPieChart";
 import PM_SeedClassBreakdownChart from "@/components/monitor-inventory/planting-materials/SeedClassBreakdownBarChart";
-import PM_SeedInventoryTable from "@/components/monitor-inventory/planting-materials/SeedInventoryTable";
 
 
 export default function MonitorInventoryPage() {
