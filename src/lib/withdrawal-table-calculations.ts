@@ -1,5 +1,3 @@
-// /lib/data-calculations.ts
-
 interface WithdrawalRecord {
     TIMESTAMP: string
     QR_CODE: string

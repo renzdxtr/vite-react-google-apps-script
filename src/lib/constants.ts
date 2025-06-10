@@ -149,3 +149,12 @@ export const CROP_VOLUME_THRESHOLDS = {
 
 // Default thresholds for crops not in the list
 export const DEFAULT_THRESHOLDS = [100.0, 50.0] // [low_volume_threshold, very_low_volume_threshold]
+
+// ===== THRESHOLD CONSTANTS =====
+export const THRESHOLDS = {
+  // Days since last withdrawal to consider item "stale"
+  STALE_INVENTORY_DAYS: AGING_THRESHOLD,
+
+  // Days until expiry to show warning
+  EXPIRY_WARNING_DAYS: EXPIRY_WARNING_THRESHOLD,
+} as const
