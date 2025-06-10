@@ -1,3 +1,14 @@
+// Configuration
+const SHEET_NAMES = {
+  WITHDRAWAL_LOGS: 'Withdrawal Logs',
+  FORM_RESPONSES: 'Form Responses',
+  EDIT_LOGS: 'Edit Logs'
+};
+
+const SPREADSHEET_ID = '1kVzhjXX45GLnqiLiqmeg81sy0FAtEd70EcMAo2_Ejlc'
+
+// ─── Default ──────────────────────────────────────────────────────
+
 /**
  * Doget function to serve the web app
  */
@@ -12,6 +23,8 @@ function includes(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
+// ─── Fetch Seed Details (By QR) ──────────────────────────────────────────────────────
+
 /**
  * Fetches seed details by QR code from the Google Sheet
  */
@@ -19,7 +32,7 @@ function fetchSeedDetailsByQrCode(qrCode) {
   console.log("FETCH SEED DETAILS FOR QR CODE: " + qrCode);
   
   try {
-    const spreadsheetId = '1kVzhjXX45GLnqiLiqmeg81sy0FAtEd70EcMAo2_Ejlc';
+    const spreadsheetId = SPREADSHEET_ID;
     const sheetName = SHEET_NAMES.FORM_RESPONSES;
     
     // Open the spreadsheet and get the data
@@ -199,6 +212,8 @@ function fetchSeedDetailsByQrCode(qrCode) {
   }
 }
 
+// ─── Update Seed Volume (Withdraw Seed) ──────────────────────────────────────────────────────
+
 function doPost(e) {
   try {
     const requestData = JSON.parse(e.postData.contents);
@@ -302,12 +317,16 @@ function updateSeedVolume(data) {
   }
 }
 
+// ─── PIN Codes + Users for Edit Details──────────────────────────────────────────────────────
+
 // Add USER_ROLES at the top of the file with FRS_COL_NAMES
 const USER_ROLES = {
   '1120': 'Procurement Team',
   '1931': 'Admin',
   '3910': 'Officer 1'
 };
+
+// ─── Update Seed Details ──────────────────────────────────────────────────────
 
 // Add FRS_COL_NAMES at the top of the file
 const FRS_COL_NAMES = {
@@ -419,6 +438,8 @@ function updateSeedDetails(data) {
   }
 }
 
+// ─── Fetch Seed Details (All data for Visualizations in Dashboard and Monitor Inventory) ──────────────────────────────────────────────────────
+
 /**
  * Fetches all seed details with optional inventory filtering
  */
@@ -429,7 +450,7 @@ function fetchSeedDetails(inventoryFilter = null) {
   }
   
   try {
-    const spreadsheetId = '1kVzhjXX45GLnqiLiqmeg81sy0FAtEd70EcMAo2_Ejlc';
+    const spreadsheetId = SPREADSHEET_ID;
     const sheetName = SHEET_NAMES.FORM_RESPONSES;
     
     const sheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName(sheetName);
@@ -542,17 +563,12 @@ function getFieldKeyFromHeader(header) {
   return requiredFieldMapping[header] || null;
 }
 
+// ─── Fetch Withdrawal Logs (All logs / By QR, for table in Dashboard & Seed Management Page) ──────────────────────────────────────────────────────
+
 /**
  * Google Apps Script for Inventory Data Management
  * Fetches and processes inventory withdrawal logs and form responses
  */
-
-// Configuration
-const SHEET_NAMES = {
-  WITHDRAWAL_LOGS: 'Withdrawal Logs',
-  FORM_RESPONSES: 'Form Responses',
-  EDIT_LOGS: 'Edit Logs'
-};
 
 /**
  * Get withdrawal logs with optional QR Code filtering
