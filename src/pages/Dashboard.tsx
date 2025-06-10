@@ -31,29 +31,29 @@ export default function DashboardPage() {
     // Use the hooks to fetch data
     const { seedDetails: inventoryData, isLoading: isLoadingInventory } = useAllSeedDetails();
     const { withdrawalDetails: withdrawalData, isLoading: isLoadingWithdrawals } = useAllWithdrawalDetails();
-    
+
     // Only process data when both are loaded
     const isLoading = isLoadingInventory || isLoadingWithdrawals;
-    
+
     // Process the data when available
     const joinedData = isLoading ? [] : joinInventoryWithWithdrawals(inventoryData, withdrawalData);
     const releaseLogData = isLoading ? [] : processReleaseLogData(withdrawalData, inventoryData);
-    
+
     // Calculate metrics using actual data
-    const todaysWithdrawals = isLoading ? { total: 0, seedStorage: 0, plantingMaterials: 0 } : 
+    const todaysWithdrawals = isLoading ? { total: 0, seedStorage: 0, plantingMaterials: 0 } :
         calculateTodaysWithdrawalsByType(joinedData);
     const currentStock = isLoading ? 0 : calculateCurrentStock(joinedData);
     const lowStockAlerts = isLoading ? 0 : calculateLowStockAlerts(joinedData);
-    
+
     const metrics = {
         todayWithdrawals: todaysWithdrawals,
         currentStock: currentStock,
         lowStockAlerts: lowStockAlerts,
     }
-    
+
     // Generate alerts from actual data
     const alerts = isLoading ? [] : generateSystemAlerts(joinedData);
-    
+
     // Convert joined data to summary table format
     const summaryData = isLoading ? [] : joinedData.map((item, index) => ({
         id: index + 1,
@@ -105,8 +105,8 @@ export default function DashboardPage() {
                                 <div data-chart-id="stockBySeedClass" className="min-w-0">
                                     <StockBySeedClassPieChart data={joinedData} />
                                 </div>
-                                <div data-chart-id="withdrawalTrend" className="min-w-0">
-                                    <WithdrawalTrendLineChart data={withdrawalData} />
+                                <div data-chart-id="stockByLocation" className="min-w-0">
+                                    <StockByLocationBarChart data={joinedData} />
                                 </div>
                             </div>
                         </div>
@@ -118,9 +118,6 @@ export default function DashboardPage() {
                             <div className="grid gap-4">
                                 <div data-chart-id="withdrawalByCrop" className="min-w-0">
                                     <WithdrawalByCropChart data={joinedData} />
-                                </div>
-                                <div data-chart-id="stockByLocation" className="min-w-0">
-                                    <StockByLocationBarChart data={joinedData} />
                                 </div>
                                 <div data-chart-id="withdrawalAnalysis" className="min-w-0">
                                     <WithdrawalAnalysisChart data={withdrawalData} />
