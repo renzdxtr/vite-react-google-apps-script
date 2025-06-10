@@ -47,16 +47,42 @@ const ScanQR = () => {
   useEffect(() => {
     const getCameras = async () => {
       try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoDevices = devices.filter(device => device.kind === 'videoinput');
-        setCameras(videoDevices);
-        
-        // Default to back camera if available
-        const backCamera = videoDevices.find(device => 
-          device.label.toLowerCase().includes('back') || 
-          device.label.toLowerCase().includes('rear')
-        );
-        setCurrentCamera(backCamera?.deviceId || videoDevices[0]?.deviceId || '');
+        // First try to access the back camera directly using facingMode
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { exact: 'environment' } }
+          });
+          
+          // If successful, we know we have a back camera
+          // Get the track and its settings
+          const videoTrack = stream.getVideoTracks()[0];
+          const settings = videoTrack.getSettings();
+          
+          // Store the deviceId if available
+          if (settings.deviceId) {
+            setCurrentCamera(settings.deviceId);
+          }
+          
+          // Stop the stream since we only needed it to get the device ID
+          stream.getTracks().forEach(track => track.stop());
+          
+          // Still enumerate devices to have the full list for camera switching
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const videoDevices = devices.filter(device => device.kind === 'videoinput');
+          setCameras(videoDevices);
+        } catch (err) {
+          // If facingMode: environment fails, fall back to device enumeration
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const videoDevices = devices.filter(device => device.kind === 'videoinput');
+          setCameras(videoDevices);
+          
+          // Try to find back camera by label
+          const backCamera = videoDevices.find(device => 
+            device.label.toLowerCase().includes('back') || 
+            device.label.toLowerCase().includes('rear')
+          );
+          setCurrentCamera(backCamera?.deviceId || videoDevices[0]?.deviceId || '');
+        }
       } catch (err) {
         console.error('Error getting cameras:', err);
         setScanError('Unable to access camera');
@@ -66,11 +92,11 @@ const ScanQR = () => {
     getCameras();
   }, []);
 
-  // Scanner configuration
+  // Update constraints to use facingMode as fallback when no deviceId is available
   const constraints = {
-    video: {
-      deviceId: currentCamera ? { exact: currentCamera } : undefined,
-    }
+    video: currentCamera 
+      ? { deviceId: { exact: currentCamera } }
+      : { facingMode: { exact: 'environment' } }
   };
 
   // Switch camera handler
