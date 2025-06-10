@@ -227,4 +227,3 @@ export function fetchAllWithdrawalDetails(qrCode = null) {
   // Return mock data for development
   return mockFetchAllWithdrawalDetails(qrCode);
 }
-

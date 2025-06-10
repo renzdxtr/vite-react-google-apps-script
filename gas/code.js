@@ -236,7 +236,7 @@ function doPost(e) {
 function updateSeedVolume(data) {
   try {
     const { qrCode, inventory, withdrawalAmount, withdrawalReason } = data;
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const formSheet = ss.getSheetByName(SHEET_NAMES.FORM_RESPONSES);
     const logsSheet = ss.getSheetByName(SHEET_NAMES.WITHDRAWAL_LOGS);
     
@@ -360,7 +360,7 @@ const FRS_COL_NAMES = {
 function updateSeedDetails(data) {
   try {
     const { qrCode, oldData, newData, pinCode } = data; // Extract pinCode
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const formSheet = ss.getSheetByName(SHEET_NAMES.FORM_RESPONSES);
     const logsSheet = ss.getSheetByName(SHEET_NAMES.EDIT_LOGS);
     
@@ -577,7 +577,7 @@ function getFieldKeyFromHeader(header) {
  */
 function getWithdrawalLogs(qrCode = null) {
   try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.WITHDRAWAL_LOGS);
+    const sheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName(SHEET_NAMES.WITHDRAWAL_LOGS);
     
     if (!sheet) {
       throw new Error(`Sheet "${SHEET_NAMES.WITHDRAWAL_LOGS}" not found`);
