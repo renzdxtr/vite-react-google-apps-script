@@ -5,6 +5,7 @@ import { X as XIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MENU_ITEMS, APP_NAME } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import SquareLogo from '../../public/logos/SquareLogo';
 
 export function FullscreenMenu({ isMenuOpen, setIsMenuOpen }) {
   const { pathname } = useLocation();
@@ -17,7 +18,7 @@ export function FullscreenMenu({ isMenuOpen, setIsMenuOpen }) {
       {/* Top header inside fullscreen menu */}
       <div className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 border-b">
         <div className="flex items-center gap-3">
-          <img src="/logos/square.svg" alt="SIS Logo" className="h-8 w-auto" />
+          <SquareLogo className="h-8 w-auto" />
         </div>
         <Button
           variant="ghost"
