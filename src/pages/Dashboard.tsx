@@ -61,10 +61,10 @@ export default function DashboardPage() {
         remainingVolume: item.remainingVolume,
         withdrawnYTD: item.totalWithdrawn,
         status: calculateInventoryStatus(item),
-        dateCreated: item.STORED_DATE,
-        expiryDate: item.HARVEST_DATE,
+        storedDate: item.STORED_DATE,
+        harvestDate: item.HARVEST_DATE,
         lastWithdrawal: item.lastWithdrawal?.TIMESTAMP || "No withdrawals",
-        riskLevel: item.SEED_CLASS,
+        seedClass: item.SEED_CLASS,
     }));
 
     return (

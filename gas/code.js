@@ -275,6 +275,8 @@ function updateSeedVolume(data) {
     // Get current volume and calculate new volume
     const currentVolume = parseFloat(values[rowIndex - 1][volumeCol]);
     const newVolume = currentVolume - withdrawalAmount;
+
+    // TO DO: If newVolume == 0, set inventory to "Archived"
     
     // Format current timestamp
     const now = new Date();

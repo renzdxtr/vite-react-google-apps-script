@@ -119,10 +119,12 @@ export const SEED_STORAGE = SAMPLE_DATA_INVENTORY.filter(item => item.INVENTORY 
 export const PLANTING_MATERIALS = SAMPLE_DATA_INVENTORY.filter(item => item.INVENTORY === "Planting Materials")
 
 // Global thresholds for aging - easily configurable
-export const AGING_THRESHOLD = 365 // days
-export const CRITICAL_AGING_THRESHOLD = 912 // days
+export const AGING_THRESHOLD = 365 // days (1 year)
+export const CRITICAL_AGING_THRESHOLD = 912 // days (2.5 years)
 
-export const EXPIRY_WARNING_THRESHOLD = 1095 // days until expiry
+export const ITEM_LIFESPAN_DAYS = 1095 // days (3 years total lifespan)
+
+export const EXPIRY_WARNING_THRESHOLD = 365 // days until expiry (will start notifying user)
 export const HIGH_WITHDRAWAL_THRESHOLD = 100_000 // withdrawn YTD
 
 // Planting Materials

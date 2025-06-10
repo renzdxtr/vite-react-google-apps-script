@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { AlertCircle, Search, Filter } from "lucide-react"
 
+import { calculateExpiryDate } from "@/lib/calculateExpiryDate";
+
 import { 
   AGING_THRESHOLD, 
   CRITICAL_AGING_THRESHOLD, 
@@ -30,8 +32,8 @@ interface SummaryRow {
   remainingVolume: number
   withdrawnYTD: number
   status: string
-  dateCreated: string
-  expiryDate: string
+  storedDate: string
+  harvestDate: string
   lastWithdrawal: string
   riskLevel: string
   crop?: string // Add crop field for threshold lookup
@@ -50,18 +52,23 @@ const CURRENT_DATE = new Date()
 
 export default function EnhancedSummaryTable({ data, title = "Enhanced Summary Table" }: SummaryTableProps) {
   // Process summary data and calculate days and status
+  // In the processSummaryData function
   const processSummaryData = React.useCallback(() => {
+    console.log(data)
     return data.map((item) => {
-      const createdDate = new Date(item.dateCreated)
-      const expiryDate = new Date(item.expiryDate)
-      const lastWithdrawalDate = new Date(item.lastWithdrawal)
-
-      const daysSinceCreated = Math.floor((CURRENT_DATE.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24))
-      const daysUntilExpiry = Math.floor((expiryDate.getTime() - CURRENT_DATE.getTime()) / (1000 * 60 * 60 * 24))
+      const createdDate = new Date(item.storedDate);
+      
+      // calculate expiryDate from STORED_DATE
+      const expiryDate = calculateExpiryDate(item.storedDate);
+      
+      const lastWithdrawalDate = new Date(item.lastWithdrawal);
+  
+      const daysSinceCreated = Math.floor((CURRENT_DATE.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+      const daysUntilExpiry = Math.floor((expiryDate.getTime() - CURRENT_DATE.getTime()) / (1000 * 60 * 60 * 24));
       const daysSinceLastWithdrawal = Math.floor(
         (CURRENT_DATE.getTime() - lastWithdrawalDate.getTime()) / (1000 * 60 * 60 * 24),
-      )
-
+      );
+  
       // Extract crop name from optionValue (format: "Crop - Variety")
       const cropName = item.optionValue.split(" - ")[0] || "Unknown"
 
@@ -145,7 +152,7 @@ export default function EnhancedSummaryTable({ data, title = "Enhanced Summary T
     (item: any) => {
       // If date filters are set, calculate withdrawn amount within that range
       if (dateFromFilter || dateToFilter) {
-        const fromDate = dateFromFilter ? new Date(dateFromFilter) : new Date(item.dateCreated)
+        const fromDate = dateFromFilter ? new Date(dateFromFilter) : new Date(item.storedDate)
         const toDate = dateToFilter ? new Date(dateToFilter) : CURRENT_DATE
         const lastWithdrawalDate = new Date(item.lastWithdrawal)
 
@@ -183,11 +190,11 @@ export default function EnhancedSummaryTable({ data, title = "Enhanced Summary T
     // Date range filter
     if (dateFromFilter) {
       const fromDate = new Date(dateFromFilter)
-      filtered = filtered.filter((item) => new Date(item.dateCreated) >= fromDate)
+      filtered = filtered.filter((item) => new Date(item.storedDate) >= fromDate)
     }
     if (dateToFilter) {
       const toDate = new Date(dateToFilter)
-      filtered = filtered.filter((item) => new Date(item.dateCreated) <= toDate)
+      filtered = filtered.filter((item) => new Date(item.storedDate) <= toDate)
     }
 
     // Status filter
