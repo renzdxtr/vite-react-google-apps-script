@@ -11,10 +11,16 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 
+import StockBySeedClassPieChart from "@/components/dashboard/StockBySeedClassPieChart"
+import StockByLocationBarChart from "@/components/dashboard/StockByLocationBarChart"
+import WithdrawalTrendLineChart from "@/components/dashboard/WithdrawalTrendLineChart"
+import WithdrawalAnalysisChart from "@/components/dashboard/WithdrawalAnalysisChart"
+import WithdrawalByCropChart from "@/components/dashboard/WithdrawalByCropChart"
+
 // Import the necessary constants at the top of the file
-import { 
+import {
   CROP_VOLUME_THRESHOLDS,
-  DEFAULT_THRESHOLDS 
+  DEFAULT_THRESHOLDS
 } from "@/lib/constants"
 
 interface ExportReportingProps {
@@ -176,30 +182,6 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
     document.body.removeChild(link)
   }
 
-  // Capture chart as image
-  const captureChart = async (chartId: string): Promise<string | null> => {
-    try {
-      const html2canvas = (await import("html2canvas")).default
-      const chartElement = document.querySelector(`[data-chart-id="${chartId}"]`) as HTMLElement
-
-      if (!chartElement) {
-        console.warn(`Chart element with id ${chartId} not found`)
-        return null
-      }
-
-      const canvas = await html2canvas(chartElement, {
-        backgroundColor: "#ffffff",
-        scale: 2,
-        useCORS: true,
-      })
-
-      return canvas.toDataURL("image/png")
-    } catch (error) {
-      console.error(`Error capturing chart ${chartId}:`, error)
-      return null
-    }
-  }
-
   // Generate PDF Report
   const generatePDFReport = async () => {
     setIsExporting(true)
@@ -278,26 +260,28 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
           if (isSelected) {
             const chartImage = await captureChart(chartId)
             if (chartImage) {
-              // Add new page if needed
-              if (yPosition > 200) {
+              // Add new page for each chart to ensure proper spacing
+              if (yPosition > 50) {
                 doc.addPage()
                 yPosition = 20
               }
 
-              doc.setFontSize(12)
-              doc.text(getChartTitle(chartId), 20, yPosition)
-              yPosition += 10
+              // Add chart image - larger size to capture full card
+              // Calculate dimensions to fit on page while maintaining aspect ratio
+              const maxWidth = 170
+              const maxHeight = 120
+              const aspectRatio = 800 / 600 // width / height of our chart cards
 
-              // Add chart image
-              doc.addImage(chartImage, "PNG", 20, yPosition, 170, 100)
-              yPosition += 110
+              let imgWidth = maxWidth
+              let imgHeight = maxWidth / aspectRatio
 
-              // Add chart description
-              doc.setFontSize(10)
-              const description = getChartDescription(chartId, filteredData, filteredWithdrawals)
-              const descLines = doc.splitTextToSize(description, 170)
-              doc.text(descLines, 20, yPosition)
-              yPosition += descLines.length * 5 + 15
+              if (imgHeight > maxHeight) {
+                imgHeight = maxHeight
+                imgWidth = maxHeight * aspectRatio
+              }
+
+              doc.addImage(chartImage, "PNG", 20, yPosition, imgWidth, imgHeight)
+              yPosition += imgHeight + 15
             }
           }
         }
@@ -317,10 +301,10 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
         const tableHeaders = ["Crop", "Variety", "Location", "Remaining (g)", "Withdrawn (g)", "Status"]
 
         // In the exportPDF function, replace the table generation code with this:
-        
+
         // Define column widths (total should be around 170 for A4 page)
         const columnWidths = [40, 40, 30, 25, 25, 20] // Wider columns for text fields
-        
+
         // Table header
         let xPosition = 20
         tableHeaders.forEach((header, index) => {
@@ -328,7 +312,7 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
           xPosition += columnWidths[index]
         })
         yPosition += 7
-        
+
         // Table rows
         filteredData.slice(0, 30).forEach((item) => {
           // Limit to 30 items for PDF
@@ -336,7 +320,7 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
             doc.addPage()
             yPosition = 20
           }
-          
+
           xPosition = 20
           const rowData = [
             item.CROP,
@@ -346,30 +330,30 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
             `${item.totalWithdrawn}g`,
             getItemStatus(item),
           ]
-          
+
           // Apply text wrapping for each cell
           rowData.forEach((cell, index) => {
             // Split text to fit column width (subtract 2 for margin)
             const maxWidth = columnWidths[index] - 2
             const lines = doc.splitTextToSize(cell, maxWidth)
-            
+
             // Calculate line height based on font size
             const lineHeight = doc.getTextDimensions('Text').h * 1.2
-            
+
             // Draw each line of text
             lines.forEach((line: string, lineIndex: number) => {
               doc.text(line, xPosition, yPosition + (lineIndex * lineHeight))
             })
-            
+
             // Move to next column
             xPosition += columnWidths[index]
           })
-          
+
           // Calculate the maximum number of lines in this row to determine row height
           const maxLines = Math.max(...rowData.map((cell, index) => {
             return doc.splitTextToSize(cell, columnWidths[index] - 2).length
           }))
-          
+
           // Move to next row (adjust based on number of lines)
           yPosition += Math.max(5, maxLines * doc.getTextDimensions('Text').h * 1.2 + 2)
         })
@@ -418,10 +402,91 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
   const getItemStatus = (item: any) => {
     const cropName = item.CROP
     const [lowVolumeThreshold, veryLowVolumeThreshold] = getCropThresholds(cropName)
-    
+
     if (item.remainingVolume <= veryLowVolumeThreshold) return "Critical"
     if (item.remainingVolume <= lowVolumeThreshold) return "Low"
     return "Normal"
+  }
+
+  const HiddenChartRenderers = () => {
+    // Only render these when exporting to avoid unnecessary rendering
+    if (!isExporting) return null;
+
+    return (
+      <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', visibility: 'hidden' }}>
+        <div data-chart-id="stockBySeedClass" className="min-w-0" style={{ width: '600px', height: '400px' }}>
+          <StockBySeedClassPieChart data={filteredData} />
+        </div>
+        <div data-chart-id="stockByLocation" className="min-w-0" style={{ width: '600px', height: '400px' }}>
+          <StockByLocationBarChart data={filteredData} />
+        </div>
+        <div data-chart-id="withdrawalTrend" className="min-w-0" style={{ width: '600px', height: '400px' }}>
+          <WithdrawalTrendLineChart data={filteredWithdrawals} />
+        </div>
+        <div data-chart-id="withdrawalAnalysis" className="min-w-0" style={{ width: '600px', height: '400px' }}>
+          <WithdrawalAnalysisChart data={filteredWithdrawals} />
+        </div>
+        <div data-chart-id="withdrawalByCrop" className="min-w-0" style={{ width: '600px', height: '400px' }}>
+          <WithdrawalByCropChart data={filteredData} />
+        </div>
+      </div>
+    );
+  };
+
+  // Capture chart as image
+  // const captureChart = async (chartId: string): Promise<string | null> => {
+  //   try {
+  //     const html2canvas = (await import("html2canvas")).default
+  //     let chartElement = document.querySelector(`[data-chart-id="${chartId}-export"]`) as HTMLElement
+
+  //     if (!chartElement) {
+  //       console.error(`Chart element with id ${chartId}-export not found`)
+  //       return null
+  //     }
+
+  //     const canvas = await html2canvas(chartElement, {
+  //       backgroundColor: "#ffffff",
+  //       scale: 2,
+  //       useCORS: true,
+  //     })
+
+  //     return canvas.toDataURL("image/png")
+  //   } catch (error) {
+  //     console.error(`Error capturing chart ${chartId}:`, error)
+  //     return null
+  //   }
+  // }
+
+  // Capture chart as image
+  const captureChart = async (chartId: string): Promise<string | null> => {
+    try {
+      const html2canvas = (await import("html2canvas")).default
+      const chartElement = document.querySelector(`[data-chart-id="${chartId}-export"]`) as HTMLElement
+
+      if (!chartElement) {
+        console.error(`Chart element with id ${chartId}-export not found`)
+        return null
+      }
+
+      // Wait a moment to ensure chart is fully rendered
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      const canvas = await html2canvas(chartElement, {
+        backgroundColor: "#ffffff",
+        scale: 1.5, // Increased scale for better quality
+        useCORS: true,
+        allowTaint: true,
+        width: 800, // Match the container width
+        height: 600, // Match the container height
+        scrollX: 0,
+        scrollY: 0,
+      })
+
+      return canvas.toDataURL("image/png", 0.9) // High quality PNG
+    } catch (error) {
+      console.error(`Error capturing chart ${chartId}:`, error)
+      return null
+    }
   }
 
   return (
@@ -649,6 +714,43 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
           </div>
         </CardContent>
       </Card>
+
+
+
+      {/* Hidden charts for PDF export - positioned off-screen but fully rendered */}
+      <div
+        style={{
+          position: 'absolute',
+          left: '-9999px',
+          top: '-9999px',
+          width: '100%',  // Wider to accommodate full chart cards
+          pointerEvents: 'none',
+          zIndex: -1
+        }}
+      >
+        {/* Each chart wrapped in a Card component to match the visible charts */}
+        <div data-chart-id="stockBySeedClass-export" style={{ width: '100%', height: '100%' }}>
+          <StockBySeedClassPieChart data={filteredData} />
+        </div>
+
+        <div data-chart-id="stockByLocation-export" style={{ width: '100%', height: '100%' }}>
+          <StockByLocationBarChart data={filteredData} />
+        </div>
+
+        <div data-chart-id="withdrawalByCrop-export" style={{ width: '100%', height: '100%' }}>
+          <WithdrawalByCropChart data={filteredData} />
+        </div>
+
+
+        <div data-chart-id="withdrawalAnalysis-export" style={{ width: '100%', height: '100%' }}>
+          <WithdrawalAnalysisChart data={filteredWithdrawals} />
+        </div>
+
+
+        <div data-chart-id="withdrawalTrend-export" style={{ width: '100%', height: '100%' }}>
+          <WithdrawalTrendLineChart data={filteredWithdrawals} />
+        </div>
+      </div>
     </div>
   )
 }
