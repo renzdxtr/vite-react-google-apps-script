@@ -1,24 +1,28 @@
+import { 
+  CROP_VOLUME_THRESHOLDS
+} from "@/lib/constants"
+
 // ===== CROP-SPECIFIC VOLUME THRESHOLDS =====
 // Commercial‐scale crop volume thresholds: [low_volume_threshold, very_low_volume_threshold] in grams
-const CROP_VOLUME_THRESHOLDS = {
-  Tomato: [40.0, 20.0],
-  Eggplant: [60.0, 30.0],
-  "Hot Pepper": [20.0, 10.0],
-  Corn: [60.0, 30.0],
-  Peanut: [80.0, 40.0],
-  "Bottle Gourd": [200.0, 100.0],
-  "Sponge Gourd": [200.0, 100.0],
-  Okra: [70.0, 35.0],
-  Cowpea: [100.0, 50.0],
-  Mungbean: [70.0, 35.0],
-  Soybean: [70.0, 35.0],
-  "Bush Sitao": [100.0, 50.0],
-  "Pole Sitao": [100.0, 50.0],
-  "Winged Bean": [100.0, 50.0],
-} as const
+// const CROP_VOLUME_THRESHOLDS = {
+//   Tomato: [40.0, 20.0],
+//   Eggplant: [60.0, 30.0],
+//   "Hot Pepper": [20.0, 10.0],
+//   Corn: [60.0, 30.0],
+//   Peanut: [80.0, 40.0],
+//   "Bottle Gourd": [200.0, 100.0],
+//   "Sponge Gourd": [200.0, 100.0],
+//   Okra: [70.0, 35.0],
+//   Cowpea: [100.0, 50.0],
+//   Mungbean: [70.0, 35.0],
+//   Soybean: [70.0, 35.0],
+//   "Bush Sitao": [100.0, 50.0],
+//   "Pole Sitao": [100.0, 50.0],
+//   "Winged Bean": [100.0, 50.0],
+// } as const
 
 // Default thresholds for crops not in the list
-const DEFAULT_THRESHOLDS = [100.0, 50.0] // [low_volume_threshold, very_low_volume_threshold]
+// const DEFAULT_THRESHOLDS = [100.0, 50.0] // [low_volume_threshold, very_low_volume_threshold]
 
 // ===== THRESHOLD CONSTANTS =====
 export const THRESHOLDS = {

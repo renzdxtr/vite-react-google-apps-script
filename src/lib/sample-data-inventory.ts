@@ -10,7 +10,7 @@ export const SAMPLE_DATA_INVENTORY = [
     BAG_NUMBER: 0,
     UNIT: "Grams (g)",
     STORED_DATE: "04/20/2025",
-    VOLUME: 1250,
+    VOLUME: 5,
     GERMINATION_RATE: 92,
     CODE: "Sbn11-3-2-01-15-2025-P",
     QR_DOCUMENT: "https://docs.google.com/open?id=1",

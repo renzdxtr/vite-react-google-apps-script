@@ -10,32 +10,37 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-import { AGING_THRESHOLD, CRITICAL_AGING_THRESHOLD } from "@/lib/constants"
+import {
+  AGING_THRESHOLD,
+  CRITICAL_AGING_THRESHOLD,
+  CROP_VOLUME_THRESHOLDS,
+  DEFAULT_THRESHOLDS
+} from "@/lib/constants"
 
 interface SeedStorageTableProps {
   data: any[]
 }
 
 // Commercial‐scale crop volume thresholds: [low_volume_threshold, very_low_volume_threshold] in grams
-const CROP_VOLUME_THRESHOLDS = {
-  Tomato: [40.0, 20.0],
-  Eggplant: [60.0, 30.0],
-  "Hot Pepper": [20.0, 10.0],
-  Corn: [60.0, 30.0],
-  Peanut: [80.0, 40.0],
-  "Bottle Gourd": [200.0, 100.0],
-  "Sponge Gourd": [200.0, 100.0],
-  Okra: [70.0, 35.0],
-  Cowpea: [100.0, 50.0],
-  Mungbean: [70.0, 35.0],
-  Soybean: [70.0, 35.0],
-  "Bush Sitao": [100.0, 50.0],
-  "Pole Sitao": [100.0, 50.0],
-  "Winged Bean": [100.0, 50.0],
-} as const
+// const CROP_VOLUME_THRESHOLDS = {
+//   Tomato: [40.0, 20.0],
+//   Eggplant: [60.0, 30.0],
+//   "Hot Pepper": [20.0, 10.0],
+//   Corn: [60.0, 30.0],
+//   Peanut: [80.0, 40.0],
+//   "Bottle Gourd": [200.0, 100.0],
+//   "Sponge Gourd": [200.0, 100.0],
+//   Okra: [70.0, 35.0],
+//   Cowpea: [100.0, 50.0],
+//   Mungbean: [70.0, 35.0],
+//   Soybean: [70.0, 35.0],
+//   "Bush Sitao": [100.0, 50.0],
+//   "Pole Sitao": [100.0, 50.0],
+//   "Winged Bean": [100.0, 50.0],
+// } as const
 
 // Default thresholds for crops not in the list
-const DEFAULT_THRESHOLDS = [100.0, 50.0] // [low_volume_threshold, very_low_volume_threshold]
+// const DEFAULT_THRESHOLDS = [100.0, 50.0] // [low_volume_threshold, very_low_volume_threshold]
 
 // Global thresholds for aging - easily configurable
 // const AGING_THRESHOLD = 365 // days
