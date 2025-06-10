@@ -11,6 +11,12 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 
+// Import the necessary constants at the top of the file
+import { 
+  CROP_VOLUME_THRESHOLDS,
+  DEFAULT_THRESHOLDS 
+} from "@/lib/constants"
+
 interface ExportReportingProps {
   joinedData: any[]
   withdrawalData: any[]
@@ -237,7 +243,7 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
       yPosition += 5
       doc.text(`Seed Storage Stock: ${metrics.currentStock.seedStorage.value}g`, 20, yPosition)
       yPosition += 5
-      doc.text(`Planting Materials Stock: ${metrics.currentStock.plantingMaterials.value}g`, 20, yPosition)
+      doc.text(`Planting Materials Stock: ${metrics.currentStock.plantingMaterials.value}pcs`, 20, yPosition)
       yPosition += 5
       doc.text(
         `Low Stock Alerts: ${metrics.lowStockAlerts.seedStorage.value + metrics.lowStockAlerts.plantingMaterials.value}`,
@@ -310,14 +316,19 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
         doc.setFontSize(8)
         const tableHeaders = ["Crop", "Variety", "Location", "Remaining (g)", "Withdrawn (g)", "Status"]
 
+        // In the exportPDF function, replace the table generation code with this:
+        
+        // Define column widths (total should be around 170 for A4 page)
+        const columnWidths = [40, 40, 30, 25, 25, 20] // Wider columns for text fields
+        
         // Table header
         let xPosition = 20
         tableHeaders.forEach((header, index) => {
           doc.text(header, xPosition, yPosition)
-          xPosition += 30
+          xPosition += columnWidths[index]
         })
         yPosition += 7
-
+        
         // Table rows
         filteredData.slice(0, 30).forEach((item) => {
           // Limit to 30 items for PDF
@@ -325,22 +336,42 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
             doc.addPage()
             yPosition = 20
           }
-
+          
           xPosition = 20
           const rowData = [
-            item.CROP.substring(0, 10),
-            item.VARIETY.substring(0, 12),
-            item.LOCATION.substring(0, 8),
+            item.CROP,
+            item.VARIETY,
+            item.LOCATION,
             `${item.remainingVolume}g`,
             `${item.totalWithdrawn}g`,
             getItemStatus(item),
           ]
-
-          rowData.forEach((cell) => {
-            doc.text(cell, xPosition, yPosition)
-            xPosition += 30
+          
+          // Apply text wrapping for each cell
+          rowData.forEach((cell, index) => {
+            // Split text to fit column width (subtract 2 for margin)
+            const maxWidth = columnWidths[index] - 2
+            const lines = doc.splitTextToSize(cell, maxWidth)
+            
+            // Calculate line height based on font size
+            const lineHeight = doc.getTextDimensions('Text').h * 1.2
+            
+            // Draw each line of text
+            lines.forEach((line: string, lineIndex: number) => {
+              doc.text(line, xPosition, yPosition + (lineIndex * lineHeight))
+            })
+            
+            // Move to next column
+            xPosition += columnWidths[index]
           })
-          yPosition += 5
+          
+          // Calculate the maximum number of lines in this row to determine row height
+          const maxLines = Math.max(...rowData.map((cell, index) => {
+            return doc.splitTextToSize(cell, columnWidths[index] - 2).length
+          }))
+          
+          // Move to next row (adjust based on number of lines)
+          yPosition += Math.max(5, maxLines * doc.getTextDimensions('Text').h * 1.2 + 2)
         })
       }
 
@@ -378,9 +409,18 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
     return descriptions[chartId as keyof typeof descriptions] || ""
   }
 
+  // Get crop-specific thresholds
+  const getCropThresholds = (cropName: string): [number, number] => {
+    return CROP_VOLUME_THRESHOLDS[cropName as keyof typeof CROP_VOLUME_THRESHOLDS] || DEFAULT_THRESHOLDS
+  }
+
+  // Update the getItemStatus function
   const getItemStatus = (item: any) => {
-    if (item.remainingVolume <= 500) return "Critical"
-    if (item.remainingVolume <= 1000) return "Low"
+    const cropName = item.CROP
+    const [lowVolumeThreshold, veryLowVolumeThreshold] = getCropThresholds(cropName)
+    
+    if (item.remainingVolume <= veryLowVolumeThreshold) return "Critical"
+    if (item.remainingVolume <= lowVolumeThreshold) return "Low"
     return "Normal"
   }
 
