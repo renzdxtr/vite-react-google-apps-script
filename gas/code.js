@@ -32,11 +32,10 @@ function fetchSeedDetailsByQrCode(qrCode) {
   console.log("FETCH SEED DETAILS FOR QR CODE: " + qrCode);
   
   try {
-    const spreadsheetId = SPREADSHEET_ID;
     const sheetName = SHEET_NAMES.FORM_RESPONSES;
     
     // Open the spreadsheet and get the data
-    const sheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName(sheetName);
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(sheetName);
     if (!sheet) {
       throw new Error(`Sheet "${sheetName}" not found`);
     }
@@ -450,10 +449,9 @@ function fetchSeedDetails(inventoryFilter = null) {
   }
   
   try {
-    const spreadsheetId = SPREADSHEET_ID;
     const sheetName = SHEET_NAMES.FORM_RESPONSES;
     
-    const sheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName(sheetName);
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(sheetName);
     if (!sheet) {
       throw new Error(`Sheet "${sheetName}" not found`);
     }
@@ -577,7 +575,7 @@ function getFieldKeyFromHeader(header) {
  */
 function getWithdrawalLogs(qrCode = null) {
   try {
-    const sheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName(SHEET_NAMES.WITHDRAWAL_LOGS);
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAMES.WITHDRAWAL_LOGS);
     
     if (!sheet) {
       throw new Error(`Sheet "${SHEET_NAMES.WITHDRAWAL_LOGS}" not found`);
