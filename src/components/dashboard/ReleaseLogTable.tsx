@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ArrowUpDown, ChevronLeft, ChevronRight, Search } from "lucide-react"
+import { ArrowUpDown, ChevronLeft, ChevronRight, Search, X } from "lucide-react"
 import clsx from "clsx"
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { DROPDOWN_CHOICES } from "@/lib/constants"
 
 interface ReleaseLogItem {
   id: string
@@ -67,25 +68,50 @@ export default function ReleaseLogTable({ data }: ReleaseLogTableProps) {
     direction: "ascending" | "descending"
   } | null>(null)
 
+  // New state for filters
+  const [cropFilter, setCropFilter] = React.useState<string>("all") 
+  const [inventoryTypeFilter, setInventoryTypeFilter] = React.useState<string>("all") 
+
+  // Get unique crop values from data
+  const uniqueCrops = React.useMemo(() => {
+    const crops = [...new Set(releaseLogData.map(item => item.crop))].filter(Boolean)
+    return crops.sort()
+  }, [releaseLogData])
+
   // Ensure component is mounted before rendering - same as SummaryTable
   React.useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Filter data based on search query - same as SummaryTable
+  // Filter data based on search query and filters - updated to include new filters
   const filteredData = React.useMemo(() => {
-    if (!searchQuery) return releaseLogData
+    let filtered = releaseLogData
 
-    const lowerCaseQuery = searchQuery.toLowerCase()
-    return releaseLogData.filter(
-      (item) =>
-        item.crop.toLowerCase().includes(lowerCaseQuery) ||
-        item.variety.toLowerCase().includes(lowerCaseQuery) ||
-        item.reason.toLowerCase().includes(lowerCaseQuery) ||
-        item.user.toLowerCase().includes(lowerCaseQuery) ||
-        item.id.toString().includes(lowerCaseQuery),
-    )
-  }, [releaseLogData, searchQuery])
+    // Apply text search filter
+    if (searchQuery) {
+      const lowerCaseQuery = searchQuery.toLowerCase()
+      filtered = filtered.filter(
+        (item) =>
+          item.crop.toLowerCase().includes(lowerCaseQuery) ||
+          item.variety.toLowerCase().includes(lowerCaseQuery) ||
+          item.reason.toLowerCase().includes(lowerCaseQuery) ||
+          item.user.toLowerCase().includes(lowerCaseQuery) ||
+          item.id.toString().includes(lowerCaseQuery),
+      )
+    }
+
+    // Apply crop filter
+    if (cropFilter && cropFilter !== "all") {
+      filtered = filtered.filter(item => item.crop === cropFilter)
+    }
+
+    // Apply inventory type filter
+    if (inventoryTypeFilter && inventoryTypeFilter !== "all") {
+      filtered = filtered.filter(item => item.inventoryType === inventoryTypeFilter)
+    }
+
+    return filtered
+  }, [releaseLogData, searchQuery, cropFilter, inventoryTypeFilter])
 
   // Sort data when sort config changes - same as SummaryTable
   const sortedData = React.useMemo(() => {
@@ -109,11 +135,11 @@ export default function ReleaseLogTable({ data }: ReleaseLogTableProps) {
   const endIndex = startIndex + pageSize
   const currentPageData = sortedData.slice(startIndex, endIndex)
 
-  // Reset to first page when search or sort changes - same as SummaryTable
+  // Reset to first page when search or sort or filters change
   React.useEffect(() => {
     setCurrentPage(1)
     setSelectedRowIndex(null)
-  }, [searchQuery, sortConfig])
+  }, [searchQuery, sortConfig, cropFilter, inventoryTypeFilter])
 
   // Reset to first page when page size changes - same as SummaryTable
   React.useEffect(() => {
@@ -148,13 +174,21 @@ export default function ReleaseLogTable({ data }: ReleaseLogTableProps) {
     setPageSize(Number(newPageSize))
   }
 
-  // Format weight in grams - same as SummaryTable
-  const formatWeight = (weight: number) => {
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchQuery("")
+    setCropFilter("all")
+    setInventoryTypeFilter("all")
+  }
+
+  // Format weight based on inventory type
+  const formatWeight = (weight: number, inventoryType: string) => {
+    const unit = inventoryType === "Planting Materials" ? "pc" : "g"
     return (
       new Intl.NumberFormat("en-US", {
         minimumFractionDigits: 0,
         maximumFractionDigits: 1,
-      }).format(weight) + "g"
+      }).format(weight) + unit
     )
   }
 
@@ -206,6 +240,9 @@ export default function ReleaseLogTable({ data }: ReleaseLogTableProps) {
     )
   }
 
+  // Check if any filters are active
+  const hasActiveFilters = searchQuery || cropFilter !== "all" || inventoryTypeFilter !== "all"
+
   return (
     <Card className="w-full">
       <CardHeader className="pb-4">
@@ -214,11 +251,17 @@ export default function ReleaseLogTable({ data }: ReleaseLogTableProps) {
             <CardTitle className="text-lg md:text-xl">Release Log</CardTitle>
             <CardDescription className="text-sm">
               Complete history of seed withdrawals and releases
-              {searchQuery && ` - Filtered by "${searchQuery}"`}
+              {hasActiveFilters && (
+                <span>
+                  {searchQuery && ` - Search: "${searchQuery}"`}
+                  {cropFilter !== "all" && ` - Crop: ${cropFilter}`}
+                  {inventoryTypeFilter !== "all" && ` - Inventory: ${inventoryTypeFilter}`}
+                </span>
+              )}
             </CardDescription>
           </div>
 
-          {/* Search controls - same pattern as SummaryTable */}
+          {/* Search controls with new filters */}
           <div className="flex flex-col space-y-3">
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1 min-w-0">
@@ -231,7 +274,38 @@ export default function ReleaseLogTable({ data }: ReleaseLogTableProps) {
                 />
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
+                {/* Crop Filter */}
+                <Select value={cropFilter} onValueChange={setCropFilter}>
+                  <SelectTrigger className="h-10 w-32 sm:w-36">
+                    <SelectValue placeholder="Crop" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Crops</SelectItem>
+                    {uniqueCrops.map((crop) => (
+                      <SelectItem key={crop} value={crop}>
+                        {crop}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Inventory Type Filter */}
+                <Select value={inventoryTypeFilter} onValueChange={setInventoryTypeFilter}>
+                  <SelectTrigger className="h-10 w-32 sm:w-36">
+                    <SelectValue placeholder="Inventory" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Inventory</SelectItem>
+                    {DROPDOWN_CHOICES.INVENTORY.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Page Size */}
                 <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
                   <SelectTrigger className="h-10 w-20 sm:w-24">
                     <SelectValue />
@@ -244,6 +318,19 @@ export default function ReleaseLogTable({ data }: ReleaseLogTableProps) {
                     ))}
                   </SelectContent>
                 </Select>
+
+                {/* Clear Filters Button - only show when filters are active */}
+                {hasActiveFilters && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={clearFilters}
+                    className="h-10 px-3 flex items-center gap-1"
+                  >
+                    <X className="h-4 w-4" />
+                    <span>Clear</span>
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -294,6 +381,15 @@ export default function ReleaseLogTable({ data }: ReleaseLogTableProps) {
                         Reason <ArrowUpDown className="h-3 w-3" />
                       </Button>
                     </TableHead>
+                    <TableHead className="w-[100px] min-w-[100px]">
+                      <Button
+                        variant="ghost"
+                        onClick={() => requestSort("inventoryType")}
+                        className="flex items-center gap-1 p-0 h-auto font-medium text-sm w-full justify-start hover:bg-transparent"
+                      >
+                        Inventory <ArrowUpDown className="h-3 w-3" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="w-[100px] min-w-[100px]">User</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -325,11 +421,14 @@ export default function ReleaseLogTable({ data }: ReleaseLogTableProps) {
                         </TableCell>
                         <TableCell className="text-right py-3">
                           <div className="space-y-1">
-                            <div className="text-sm font-medium text-green-600">{formatWeight(item.volume)}</div>
+                            <div className="text-sm font-medium text-green-600">{formatWeight(item.volume, item.inventoryType)}</div>
                           </div>
                         </TableCell>
                         <TableCell className="py-3">
                           <div className="text-sm">{item.reason || "Not specified"}</div>
+                        </TableCell>
+                        <TableCell className="py-3">
+                          <div className="text-sm">{item.inventoryType || "Unknown"}</div>
                         </TableCell>
                         <TableCell className="py-3">
                           <div className="text-sm">{item.user || "Unknown"}</div>
