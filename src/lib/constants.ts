@@ -38,7 +38,8 @@ export const NON_REQUIRED_FIELDS = [
   'MOISTURE_CONTENT',
   'HARVEST_DATE',
   'BAG_NUMBER',
-  'ARCHIVED'
+  'ARCHIVED',
+  'LAST_MODIFIED'
 ] as const;
 
 // ─── Fields treated as dates (rendered with <input type="datetime-local">) ───

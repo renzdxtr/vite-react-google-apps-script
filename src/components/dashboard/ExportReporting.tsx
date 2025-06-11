@@ -30,6 +30,10 @@ interface ExportReportingProps {
   alerts: any[]
 }
 
+// Increase these dimensions for larger chart rendering
+const cardStyleDimension = { 'WIDTH': '1600px', 'HEIGHT': '1200px' }
+const canvasDimension = { 'WIDTH': 1600, 'HEIGHT': 1200 }
+
 export default function ExportReporting({ joinedData, withdrawalData, metrics, alerts }: ExportReportingProps) {
   const [dateFrom, setDateFrom] = React.useState("")
   const [dateTo, setDateTo] = React.useState("")
@@ -249,41 +253,105 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
         yPosition += 10
       }
 
-      // Charts Section
+      // Charts Section - Enhanced Layout with 2 charts per page
       if (Object.values(selectedCharts).some(Boolean)) {
-        doc.setFontSize(16)
-        doc.text("Charts and Analysis", 20, yPosition)
-        yPosition += 10
-
-        // Capture and add selected charts
-        for (const [chartId, isSelected] of Object.entries(selectedCharts)) {
-          if (isSelected) {
-            const chartImage = await captureChart(chartId)
-            if (chartImage) {
-              // Add new page for each chart to ensure proper spacing
-              if (yPosition > 50) {
-                doc.addPage()
-                yPosition = 20
-              }
-
-              // Add chart image - larger size to capture full card
-              // Calculate dimensions to fit on page while maintaining aspect ratio
-              const maxWidth = 170
-              const maxHeight = 120
-              const aspectRatio = 800 / 600 // width / height of our chart cards
-
-              let imgWidth = maxWidth
-              let imgHeight = maxWidth / aspectRatio
-
-              if (imgHeight > maxHeight) {
-                imgHeight = maxHeight
-                imgWidth = maxHeight * aspectRatio
-              }
-
-              doc.addImage(chartImage, "PNG", 20, yPosition, imgWidth, imgHeight)
-              yPosition += imgHeight + 15
-            }
+        // Add new page for charts section
+        doc.addPage()
+        yPosition = 20
+      
+        doc.setFontSize(18)
+        doc.text("Data Visualization and Analysis", 20, yPosition)
+        yPosition += 15
+      
+        // Get selected charts
+        const selectedChartIds = Object.entries(selectedCharts)
+          .filter(([_, isSelected]) => isSelected)
+          .map(([chartId, _]) => chartId)
+      
+        // Process charts in pairs (2 per page)
+        for (let i = 0; i < selectedChartIds.length; i += 2) {
+          // If this is not the first pair, add a new page
+          if (i > 0) {
+            doc.addPage()
+            yPosition = 20
           }
+      
+          // Calculate dimensions for 2 charts per page
+          const pageHeight = 297 // A4 height in mm
+          const availableHeight = pageHeight - 40 // Leave margins top and bottom
+          const chartHeight = (availableHeight - 30) / 2 // Divide by 2 charts, minus spacing
+          const chartWidth = 190 // Increased from 170 to use more page width
+          const spacing = 15 // Space between charts
+      
+          // Process first chart of the pair
+          const firstChartId = selectedChartIds[i]
+          await renderChartToPDF(doc, firstChartId, 10, yPosition, chartWidth, chartHeight) // Adjusted x position to 10
+      
+          // Process second chart of the pair (if exists)
+          if (i + 1 < selectedChartIds.length) {
+            const secondChartId = selectedChartIds[i + 1]
+            const secondChartY = yPosition + chartHeight + spacing
+            await renderChartToPDF(doc, secondChartId, 10, secondChartY, chartWidth, chartHeight) // Adjusted x position to 10
+          }
+        }
+      }
+
+      // Helper function to render individual chart to PDF
+      async function renderChartToPDF(
+        doc: any,
+        chartId: string,
+        x: number,
+        y: number,
+        width: number,
+        height: number
+      ) {
+        // Add chart title
+        doc.setFontSize(14)
+        doc.setTextColor(0, 0, 0)
+        const chartTitle = getChartTitle(chartId)
+        doc.text(chartTitle, x, y)
+
+        const titleHeight = 8
+        const chartY = y + titleHeight
+
+        // Capture and add chart image
+        const chartImage = await captureChart(chartId)
+        if (chartImage) {
+          // Calculate chart image dimensions (maintain aspect ratio within bounds)
+          const imageHeight = height - titleHeight - 15 // Reserve space for title and description
+          const aspectRatio = 4 / 3 // 4:3 aspect ratio
+
+          let imgWidth = width
+          let imgHeight = width / aspectRatio
+
+          // If calculated height exceeds available space, adjust based on height
+          if (imgHeight > imageHeight) {
+            imgHeight = imageHeight
+            imgWidth = imageHeight * aspectRatio
+          }
+
+          // Center the chart horizontally if it's smaller than available width
+          const xOffset = x + (width - imgWidth) / 2
+
+          doc.addImage(chartImage, "PNG", xOffset, chartY, imgWidth, imgHeight)
+
+          // Add chart description below the image
+          const descriptionY = chartY + imgHeight + 5
+          doc.setFontSize(8)
+          doc.setTextColor(80, 80, 80) // Gray color for description
+
+          const description = getChartDescription(chartId, filteredData, filteredWithdrawals)
+          const maxDescriptionWidth = width
+          const descriptionLines = doc.splitTextToSize(description, maxDescriptionWidth)
+
+          // Limit description to fit remaining space
+          const remainingHeight = height - (descriptionY - y)
+          const maxLines = Math.floor(remainingHeight / 3) // 3mm per line
+          const limitedLines = descriptionLines.slice(0, maxLines)
+
+          limitedLines.forEach((line: string, index: number) => {
+            doc.text(line, x, descriptionY + (index * 3))
+          })
         }
       }
 
@@ -300,10 +368,8 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
         doc.setFontSize(8)
         const tableHeaders = ["Crop", "Variety", "Location", "Remaining (g)", "Withdrawn (g)", "Status"]
 
-        // In the exportPDF function, replace the table generation code with this:
-
         // Define column widths (total should be around 170 for A4 page)
-        const columnWidths = [40, 40, 30, 25, 25, 20] // Wider columns for text fields
+        const columnWidths = [40, 40, 30, 25, 25, 20]
 
         // Table header
         let xPosition = 20
@@ -315,7 +381,6 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
 
         // Table rows
         filteredData.slice(0, 30).forEach((item) => {
-          // Limit to 30 items for PDF
           if (yPosition > 270) {
             doc.addPage()
             yPosition = 20
@@ -331,30 +396,22 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
             getItemStatus(item),
           ]
 
-          // Apply text wrapping for each cell
           rowData.forEach((cell, index) => {
-            // Split text to fit column width (subtract 2 for margin)
             const maxWidth = columnWidths[index] - 2
             const lines = doc.splitTextToSize(cell, maxWidth)
-
-            // Calculate line height based on font size
             const lineHeight = doc.getTextDimensions('Text').h * 1.2
 
-            // Draw each line of text
             lines.forEach((line: string, lineIndex: number) => {
               doc.text(line, xPosition, yPosition + (lineIndex * lineHeight))
             })
 
-            // Move to next column
             xPosition += columnWidths[index]
           })
 
-          // Calculate the maximum number of lines in this row to determine row height
           const maxLines = Math.max(...rowData.map((cell, index) => {
             return doc.splitTextToSize(cell, columnWidths[index] - 2).length
           }))
 
-          // Move to next row (adjust based on number of lines)
           yPosition += Math.max(5, maxLines * doc.getTextDimensions('Text').h * 1.2 + 2)
         })
       }
@@ -384,11 +441,11 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
 
   const getChartDescription = (chartId: string, inventoryData: any[], withdrawalData: any[]) => {
     const descriptions = {
-      stockBySeedClass: `This chart shows the distribution of remaining seed stock across different seed classifications. Total items: ${inventoryData.length}`,
-      stockByLocation: `This chart displays seed stock levels across different storage locations. Locations tracked: ${availableLocations.length}`,
-      withdrawalTrend: `This chart tracks withdrawal patterns over time, showing monthly trends. Total withdrawals tracked: ${withdrawalData.length}`,
-      withdrawalAnalysis: `This chart analyzes withdrawal patterns by time of day (morning, afternoon, evening) to identify usage patterns.`,
-      withdrawalByCrop: `This chart shows total withdrawals by crop type, helping identify which crops are in highest demand.`,
+      stockBySeedClass: `This pie chart illustrates the distribution of remaining seed stock across different seed classifications (Foundation, Registered, Certified, etc.). The visualization helps identify which seed classes dominate the inventory and assists in maintaining balanced stock levels. Total items analyzed: ${inventoryData.length}`,
+      stockByLocation: `This bar chart displays seed stock levels across different storage locations within the facility. It enables quick identification of storage capacity utilization and helps optimize inventory distribution. Storage locations tracked: ${availableLocations.length}`,
+      withdrawalTrend: `This line chart tracks seed withdrawal patterns over time, showing monthly trends and seasonal variations. The trend analysis helps predict future seed demand and optimize ordering schedules. Total withdrawal transactions: ${withdrawalData.length}`,
+      withdrawalAnalysis: `This chart analyzes withdrawal patterns by time periods (morning, afternoon, evening), revealing operational patterns and peak usage times. This information helps optimize staff scheduling and resource allocation for inventory management.`,
+      withdrawalByCrop: `This horizontal bar chart shows total withdrawal volumes by crop type, highlighting which crops are in highest demand. This data supports procurement planning and helps prioritize seed varieties for future inventory expansion.`,
     }
     return descriptions[chartId as keyof typeof descriptions] || ""
   }
@@ -408,56 +465,7 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
     return "Normal"
   }
 
-  const HiddenChartRenderers = () => {
-    // Only render these when exporting to avoid unnecessary rendering
-    if (!isExporting) return null;
-
-    return (
-      <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', visibility: 'hidden' }}>
-        <div data-chart-id="stockBySeedClass" className="min-w-0" style={{ width: '600px', height: '400px' }}>
-          <StockBySeedClassPieChart data={filteredData} />
-        </div>
-        <div data-chart-id="stockByLocation" className="min-w-0" style={{ width: '600px', height: '400px' }}>
-          <StockByLocationBarChart data={filteredData} />
-        </div>
-        <div data-chart-id="withdrawalTrend" className="min-w-0" style={{ width: '600px', height: '400px' }}>
-          <WithdrawalTrendLineChart data={filteredWithdrawals} />
-        </div>
-        <div data-chart-id="withdrawalAnalysis" className="min-w-0" style={{ width: '600px', height: '400px' }}>
-          <WithdrawalAnalysisChart data={filteredWithdrawals} />
-        </div>
-        <div data-chart-id="withdrawalByCrop" className="min-w-0" style={{ width: '600px', height: '400px' }}>
-          <WithdrawalByCropChart data={filteredData} />
-        </div>
-      </div>
-    );
-  };
-
-  // Capture chart as image
-  // const captureChart = async (chartId: string): Promise<string | null> => {
-  //   try {
-  //     const html2canvas = (await import("html2canvas")).default
-  //     let chartElement = document.querySelector(`[data-chart-id="${chartId}-export"]`) as HTMLElement
-
-  //     if (!chartElement) {
-  //       console.error(`Chart element with id ${chartId}-export not found`)
-  //       return null
-  //     }
-
-  //     const canvas = await html2canvas(chartElement, {
-  //       backgroundColor: "#ffffff",
-  //       scale: 2,
-  //       useCORS: true,
-  //     })
-
-  //     return canvas.toDataURL("image/png")
-  //   } catch (error) {
-  //     console.error(`Error capturing chart ${chartId}:`, error)
-  //     return null
-  //   }
-  // }
-
-  // Capture chart as image
+  // Capture chart as image - Enhanced for clean chart rendering
   const captureChart = async (chartId: string): Promise<string | null> => {
     try {
       const html2canvas = (await import("html2canvas")).default
@@ -468,21 +476,32 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
         return null
       }
 
-      // Wait a moment to ensure chart is fully rendered
-      await new Promise(resolve => setTimeout(resolve, 500))
+      // Wait for chart to fully render
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
       const canvas = await html2canvas(chartElement, {
         backgroundColor: "#ffffff",
-        scale: 1.5, // Increased scale for better quality
+        scale: 3, // Higher resolution for better PDF quality
         useCORS: true,
         allowTaint: true,
-        width: 800, // Match the container width
-        height: 600, // Match the container height
+        width: canvasDimension.WIDTH, // Match the container width
+        height: canvasDimension.HEIGHT, // Match the container height
         scrollX: 0,
         scrollY: 0,
+        removeContainer: true,
+        logging: false, // Disable logging for cleaner output
+        onclone: (clonedDoc) => {
+          // Ensure charts are visible in the cloned document
+          const clonedElement = clonedDoc.querySelector(`[data-chart-id="${chartId}-export"]`) as HTMLElement
+          if (clonedElement) {
+            clonedElement.style.position = 'static'
+            clonedElement.style.left = '0'
+            clonedElement.style.top = '0'
+          }
+        }
       })
 
-      return canvas.toDataURL("image/png", 0.9) // High quality PNG
+      return canvas.toDataURL("image/png", 0.95)
     } catch (error) {
       console.error(`Error capturing chart ${chartId}:`, error)
       return null
@@ -678,7 +697,7 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
               )}
             </Button>
             <p className="text-xs text-muted-foreground">
-              PDF will include executive summary, selected charts, and{" "}
+              PDF will include executive summary, selected charts with detailed descriptions, and{" "}
               {reportType === "detailed" ? "detailed data tables" : "key metrics only"}.
             </p>
           </div>
@@ -715,39 +734,102 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
         </CardContent>
       </Card>
 
-
-
-      {/* Hidden charts for PDF export - positioned off-screen but fully rendered */}
+      {/* Hidden charts for PDF export - Clean rendering without card styling */}
       <div
         style={{
           position: 'absolute',
           left: '-9999px',
           top: '-9999px',
-          width: '100%',  // Wider to accommodate full chart cards
+          width: cardStyleDimension.WIDTH, // Increased width for better quality
+          height: cardStyleDimension.HEIGHT,  // Increased height for better quality
           pointerEvents: 'none',
-          zIndex: -1
+          zIndex: -1,
+          backgroundColor: 'white'
         }}
       >
-        {/* Each chart wrapped in a Card component to match the visible charts */}
-        <div data-chart-id="stockBySeedClass-export" style={{ width: '100%', height: '100%' }}>
+        {/* Each chart rendered cleanly without card wrapper */}
+        <div
+          data-chart-id="stockBySeedClass-export"
+          style={{
+            width: cardStyleDimension.WIDTH, // Increased width for better quality
+            height: cardStyleDimension.HEIGHT,  // Increased height for better quality
+            padding: '40px',
+            backgroundColor: 'white',
+            border: 'none',
+            boxShadow: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
           <StockBySeedClassPieChart data={filteredData} />
         </div>
 
-        <div data-chart-id="stockByLocation-export" style={{ width: '100%', height: '100%' }}>
+        <div
+          data-chart-id="stockByLocation-export"
+          style={{
+            width: cardStyleDimension.WIDTH, // Increased width for better quality
+            height: cardStyleDimension.HEIGHT,  // Increased height for better quality
+            padding: '40px',
+            backgroundColor: 'white',
+            border: 'none',
+            boxShadow: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
           <StockByLocationBarChart data={filteredData} />
         </div>
 
-        <div data-chart-id="withdrawalByCrop-export" style={{ width: '100%', height: '100%' }}>
+        <div
+          data-chart-id="withdrawalByCrop-export"
+          style={{
+            width: cardStyleDimension.WIDTH, // Increased width for better quality
+            height: cardStyleDimension.HEIGHT,  // Increased height for better quality
+            padding: '40px',
+            backgroundColor: 'white',
+            border: 'none',
+            boxShadow: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
           <WithdrawalByCropChart data={filteredData} />
         </div>
 
-
-        <div data-chart-id="withdrawalAnalysis-export" style={{ width: '100%', height: '100%' }}>
+        <div
+          data-chart-id="withdrawalAnalysis-export"
+          style={{
+            width: cardStyleDimension.WIDTH, // Increased width for better quality
+            height: cardStyleDimension.HEIGHT,  // Increased height for better quality
+            padding: '40px',
+            backgroundColor: 'white',
+            border: 'none',
+            boxShadow: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
           <WithdrawalAnalysisChart data={filteredWithdrawals} />
         </div>
 
-
-        <div data-chart-id="withdrawalTrend-export" style={{ width: '100%', height: '100%' }}>
+        <div
+          data-chart-id="withdrawalTrend-export"
+          style={{
+            width: cardStyleDimension.WIDTH, // Increased width for better quality
+            height: cardStyleDimension.HEIGHT,  // Increased height for better quality
+            padding: '40px',
+            backgroundColor: 'white',
+            border: 'none',
+            boxShadow: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
           <WithdrawalTrendLineChart data={filteredWithdrawals} />
         </div>
       </div>

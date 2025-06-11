@@ -5,7 +5,8 @@ const SHEET_NAMES = {
   EDIT_LOGS: 'Edit Logs'
 };
 
-const SPREADSHEET_ID = '1kVzhjXX45GLnqiLiqmeg81sy0FAtEd70EcMAo2_Ejlc'
+//const SPREADSHEET_ID = '1kVzhjXX45GLnqiLiqmeg81sy0FAtEd70EcMAo2_Ejlc'
+const SPREADSHEET_ID = '1BELq6ZyAuGjCEnAhEZVj05TGx8BiuYTYiTAQl2N5rWA' //(MAIN)
 
 // ─── Default ──────────────────────────────────────────────────────
 
