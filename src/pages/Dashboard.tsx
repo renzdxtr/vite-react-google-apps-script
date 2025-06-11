@@ -65,6 +65,8 @@ export default function DashboardPage() {
         harvestDate: item.HARVEST_DATE,
         lastWithdrawal: item.lastWithdrawal?.TIMESTAMP || "No withdrawals",
         seedClass: item.SEED_CLASS,
+        crop: item.CROP,
+        INVENTORY: item.INVENTORY
     }));
 
     return (

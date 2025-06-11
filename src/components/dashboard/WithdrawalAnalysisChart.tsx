@@ -117,28 +117,27 @@ export default function WithdrawalAnalysisChart({ data }: WithdrawalAnalysisChar
   }, [])
 
   // Custom tooltip component
+  // Add this helper function
+  const getUnitByInventoryType = (inventoryType: string) => {
+    return inventoryType === "Planting Materials" ? "pc" : "g";
+  }
+
+  // Update the CustomTooltip component
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload
-
+      const unit = getUnitByInventoryType(payload[0]?.payload?.inventoryType || "Seed Storage");
+      
       return (
         <div className="bg-white p-3 border rounded-lg shadow-lg max-w-xs">
           <p className="font-semibold text-sm mb-2">{label}</p>
           <div className="space-y-1">
-            <p className="text-sm font-medium text-purple-600">Total: {data.total.toLocaleString()}g</p>
-            <p className="text-xs text-green-600">
-              <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>
-              Morning: {data.morning.toLocaleString()}g
-            </p>
-            <p className="text-xs text-orange-600">
-              <span className="inline-block w-2 h-2 rounded-full bg-orange-500 mr-1"></span>
-              Afternoon: {data.afternoon.toLocaleString()}g
-            </p>
-            <p className="text-xs text-blue-600">
-              <span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1"></span>
-              Evening: {data.evening.toLocaleString()}g
-            </p>
-            <p className="text-xs text-gray-500 mt-1">{data.transactions} transactions</p>
+            {payload.map((entry: any, index: number) => (
+              <div key={index} className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                <span className="font-medium">{entry.name}</span>
+                <span className="ml-auto">{entry.value.toLocaleString()}{unit}</span>
+              </div>
+            ))}
           </div>
         </div>
       )
@@ -232,7 +231,7 @@ export default function WithdrawalAnalysisChart({ data }: WithdrawalAnalysisChar
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
-                tickFormatter={(value) => `${value}g`}
+                tickFormatter={(value) => `${value}${getUnitByInventoryType(data[0]?.INVENTORY || "Seed Storage")}`}
                 fontSize={12}
               />
               <ChartTooltip content={<CustomTooltip />} />

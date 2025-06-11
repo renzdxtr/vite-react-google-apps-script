@@ -102,6 +102,18 @@ export default function StockByLocationBarChart({ data }: StockByLocationBarChar
   }, [data])
 
   // Custom tooltip component
+  // Add this helper function
+  const getUnitByInventoryType = (inventoryType: string) => {
+    return inventoryType === "Planting Materials" ? "pc" : "g";
+  }
+  
+  // Determine the inventory type from the data
+  const inventoryType = React.useMemo(() => {
+    return data[0]?.INVENTORY || "Seed Storage";
+  }, [data]);
+  
+  const unit = getUnitByInventoryType(inventoryType);
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload
@@ -110,7 +122,7 @@ export default function StockByLocationBarChart({ data }: StockByLocationBarChar
       return (
         <div className="bg-white p-3 border rounded-lg shadow-lg max-w-xs">
           <p className="font-semibold text-sm mb-2">{label}</p>
-          <p className="text-xs text-gray-600 mb-2">Total Volume: {data.totalVolume}g</p>
+          <p className="text-xs text-gray-600 mb-2">Total Volume: {data.totalVolume}{unit}</p>
           <div className="space-y-1">
             <p className="text-xs font-medium text-gray-700">Crops:</p>
             {activeCrops.map((crop: any, index: number) => {
@@ -122,13 +134,13 @@ export default function StockByLocationBarChart({ data }: StockByLocationBarChar
                     <span className="font-medium">{crop.dataKey}</span>
                   </div>
                   <div className="ml-3 text-gray-600">
-                    <p>Volume: {crop.value}g</p>
+                    <p>Volume: {crop.value}{unit}</p>
                     {cropDetails.length > 0 && (
                       <>
                         <p className="font-medium mt-1">Varieties:</p>
                         {cropDetails.slice(0, 2).map((detail: any, idx: number) => (
                           <p key={idx}>
-                            • {detail.variety} ({detail.volume}g)
+                            • {detail.variety} ({detail.volume}{unit})
                           </p>
                         ))}
                         {cropDetails.length > 2 && (
@@ -226,7 +238,7 @@ export default function StockByLocationBarChart({ data }: StockByLocationBarChar
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickFormatter={(value) => `${value}g`}
+              tickFormatter={(value) => `${value}${unit}`}
               fontSize={12}
             />
             <ChartTooltip content={<CustomTooltip />} />

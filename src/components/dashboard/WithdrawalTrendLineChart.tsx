@@ -166,56 +166,30 @@ export default function WithdrawalTrendLineChart({ data }: WithdrawalTrendLineCh
   }, [processedData])
 
   // Custom tooltip component
+  // Add this helper function
+  const getUnitByInventoryType = (inventoryType: string) => {
+  return inventoryType === "Planting Materials" ? "pc" : "g";
+  }
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload
-
-      // Get top locations and crops for this month
-      const topLocations = Object.entries(data.locationBreakdown)
-        .sort(([, a], [, b]) => (b as number) - (a as number))
-        .slice(0, 3)
-
-      const topCrops = Object.entries(data.cropBreakdown)
-        .sort(([, a], [, b]) => (b as number) - (a as number))
-        .slice(0, 3)
-
+      const seedStorageUnit = getUnitByInventoryType("Seed Storage");
+      const plantingMaterialsUnit = getUnitByInventoryType("Planting Materials");
+      
       return (
-        <div className="bg-white p-3 border rounded-lg shadow-lg max-w-sm">
+        <div className="bg-white p-3 border rounded-lg shadow-lg max-w-xs">
           <p className="font-semibold text-sm mb-2">{label}</p>
-          <div className="space-y-2">
-            <div>
-              <p className="text-sm font-medium text-blue-600">
-                Total Withdrawal: {data.totalWithdrawal.toLocaleString()}g
-              </p>
-              <div className="text-xs text-gray-600 mt-1">
-                <p>Seed Storage: {data.seedStorage.toLocaleString()}g</p>
-                <p>Planting Materials: {data.plantingMaterials.toLocaleString()}g</p>
-              </div>
-            </div>
-
-            {topLocations.length > 0 && (
-              <div>
-                <p className="text-xs font-medium text-gray-700">Top Locations:</p>
-                {topLocations.map(([location, amount], index) => (
-                  <p key={index} className="text-xs text-gray-600">
-                    • {location}: {(amount as number).toLocaleString()}g
-                  </p>
-                ))}
-              </div>
-            )}
-
-            {topCrops.length > 0 && (
-              <div>
-                <p className="text-xs font-medium text-gray-700">Top Crops:</p>
-                {topCrops.map(([crop, amount], index) => (
-                  <p key={index} className="text-xs text-gray-600">
-                    • {crop}: {(amount as number).toLocaleString()}g
-                  </p>
-                ))}
-              </div>
-            )}
-
-            <p className="text-xs text-gray-500">{data.details.length} withdrawal transactions</p>
+          <div className="space-y-1">
+            {payload.map((entry: any, index: number) => {
+              const unit = entry.name.includes("Planting Materials") ? plantingMaterialsUnit : seedStorageUnit;
+              return (
+                <div key={index} className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                  <span className="font-medium">{entry.name}</span>
+                  <span className="ml-auto">{entry.value.toLocaleString()}{unit}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )
@@ -295,7 +269,7 @@ export default function WithdrawalTrendLineChart({ data }: WithdrawalTrendLineCh
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickFormatter={(value) => `${value}g`}
+              tickFormatter={(value) => `${value}${getUnitByInventoryType("Seed Storage")}`}
               fontSize={12}
             />
             <ChartTooltip content={<CustomTooltip />} />
@@ -341,14 +315,14 @@ export default function WithdrawalTrendLineChart({ data }: WithdrawalTrendLineCh
           </LineChart>
         </ChartContainer>
       </CardContent>
-      <CardFooter className="flex-col gap-2 text-sm p-4">
-        <div className="flex items-center gap-2 font-medium leading-none">
-          Total withdrawals: {totalWithdrawals.toLocaleString()}g across all months <TrendingUp className="h-4 w-4" />
-        </div>
-        <div className="leading-none text-muted-foreground text-center">
-          Showing withdrawal trends over {processedData.length} months with breakdown by inventory type
-        </div>
-      </CardFooter>
+      <CardFooter className="border-t px-6 py-4">
+  <div className="flex items-center justify-between">
+    <div className="text-sm text-muted-foreground">
+      Total Withdrawals: {totalWithdrawals.toLocaleString()}{getUnitByInventoryType("Seed Storage")}
+    </div>
+  </div>
+</CardFooter>
     </Card>
   )
 }
+

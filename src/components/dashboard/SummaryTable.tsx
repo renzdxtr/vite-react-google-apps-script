@@ -37,6 +37,7 @@ interface SummaryRow {
   lastWithdrawal: string
   riskLevel: string
   crop?: string // Add crop field for threshold lookup
+  INVENTORY?: string // Add INVENTORY field for unit determination
 }
 
 interface SummaryTableProps {
@@ -284,15 +285,16 @@ export default function EnhancedSummaryTable({ data, title = "Enhanced Summary T
     setPageSize(Number(newPageSize))
   }
 
-  // Format weight in grams
-  const formatWeight = (weight: number) => {
-    return (
-      new Intl.NumberFormat("en-US", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 1,
-      }).format(weight) + "g"
-    )
-  }
+  // Update the formatWeight function to be dynamic
+  const formatWeight = (weight: number, inventoryType: string) => {
+  const unit = inventoryType === "Planting Materials" ? "pc" : "g";
+  return (
+    new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 1,
+    }).format(weight) + unit
+  )
+}
 
   // Generate page numbers for pagination
   const getPageNumbers = () => {
@@ -537,7 +539,7 @@ export default function EnhancedSummaryTable({ data, title = "Enhanced Summary T
                                 status.isLowVolume && !status.isVeryLowVolume && "text-orange-600",
                               )}
                             >
-                              {formatWeight(item.remainingVolume)}
+                              {formatWeight(item.remainingVolume, item.INVENTORY || "Seed Storage")}
                             </div>
                             {status.isLowVolume && (
                               <div className="text-xs text-muted-foreground">
@@ -548,7 +550,7 @@ export default function EnhancedSummaryTable({ data, title = "Enhanced Summary T
                         </TableCell>
                         <TableCell className="text-right py-3">
                           <div className="space-y-1">
-                            <div className="text-sm font-medium">{formatWeight(withdrawnAmount)}</div>
+                            <div className="text-sm font-medium">{formatWeight(withdrawnAmount, item.INVENTORY || "Seed Storage")}</div>
                             <div className="text-xs text-muted-foreground">
                               {dateFromFilter || dateToFilter ? "Period" : "YTD"}
                             </div>

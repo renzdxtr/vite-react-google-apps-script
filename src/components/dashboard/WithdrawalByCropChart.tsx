@@ -99,51 +99,28 @@ export default function WithdrawalByCropChart({ data }: WithdrawalByCropChartPro
   }, [])
 
   // Custom tooltip component
+  // Add this helper function
+  const getUnitByInventoryType = (inventoryType: string) => {
+    return inventoryType === "Planting Materials" ? "pc" : "g";
+  }
+
+  // Update the CustomTooltip component
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload
-      const varieties = Object.values(data.varieties)
-      const sortedVarieties = varieties.sort((a: any, b: any) => b.totalWithdrawn - a.totalWithdrawn)
-
+      const unit = getUnitByInventoryType(selectedInventory);
+      // const unit = getUnitByInventoryType(inventoryFilter);
+      
       return (
         <div className="bg-white p-3 border rounded-lg shadow-lg max-w-xs">
           <p className="font-semibold text-sm mb-2">{label}</p>
-          <div className="space-y-2">
-            <div>
-              <p className="text-sm text-green-600">Total Withdrawn: {data.totalWithdrawn.toLocaleString()}g</p>
-              <p className="text-sm text-blue-600">Remaining: {data.remainingVolume.toLocaleString()}g</p>
-              <p className="text-xs text-gray-600">
-                Original Volume: {data.originalVolume.toLocaleString()}g ({data.withdrawalCount} withdrawals)
-              </p>
-            </div>
-
-            <div className="border-t pt-2">
-              <p className="text-xs font-medium text-gray-700">Varieties:</p>
-              {sortedVarieties.map((variety: any, index: number) => (
-                <div key={index} className="mt-1">
-                  <p className="text-xs font-medium">{variety.variety}</p>
-                  <div className="text-xs text-gray-600 ml-2">
-                    <p>Withdrawn: {variety.totalWithdrawn.toLocaleString()}g</p>
-                    <p>Remaining: {variety.remainingVolume.toLocaleString()}g</p>
-                    <p>Withdrawals: {variety.withdrawalCount}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="border-t pt-2">
-              <p className="text-xs font-medium text-gray-700">Recent Withdrawals:</p>
-              {sortedVarieties
-                .flatMap((variety: any) => variety.withdrawals)
-                .sort((a: any, b: any) => new Date(b.TIMESTAMP).getTime() - new Date(a.TIMESTAMP).getTime())
-                .slice(0, 3)
-                .map((withdrawal: any, index: number) => (
-                  <p key={index} className="text-xs text-gray-600">
-                    {new Date(withdrawal.TIMESTAMP).toLocaleDateString()}: {withdrawal.AMOUNT}g
-                    {withdrawal.REASON ? ` (${withdrawal.REASON})` : ""}
-                  </p>
-                ))}
-            </div>
+          <div className="space-y-1">
+            {payload.map((entry: any, index: number) => (
+              <div key={index} className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                <span className="font-medium">{entry.name}</span>
+                <span className="ml-auto">{entry.value.toLocaleString()}{unit}</span>
+              </div>
+            ))}
           </div>
         </div>
       )
@@ -219,7 +196,14 @@ export default function WithdrawalByCropChart({ data }: WithdrawalByCropChartPro
               interval={0}
               fontSize={12}
             />
-            <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `${value}g`} fontSize={12} />
+            // Update the YAxis tickFormatter
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tickFormatter={(value) => `${value}${getUnitByInventoryType(selectedInventory)}`}
+              fontSize={12}
+            />
             <ChartTooltip content={<CustomTooltip />} />
             <Bar dataKey="totalWithdrawn" name="Total Withdrawn" fill="#4CAF50" radius={[4, 4, 0, 0]} barSize={30} />
           </BarChart>
