@@ -35,7 +35,7 @@ interface SummaryRow {
   storedDate: string
   harvestDate: string
   lastWithdrawal: string
-  riskLevel: string
+  seedClass: string
   crop?: string // Add crop field for threshold lookup
   INVENTORY?: string // Add INVENTORY field for unit determination
 }
@@ -525,7 +525,7 @@ export default function EnhancedSummaryTable({ data, title = "Enhanced Summary T
                           <div className="space-y-1">
                             <div className="font-medium text-sm leading-tight">{item.optionValue}</div>
                             <div className="text-xs text-muted-foreground">
-                              Seed Class: {item.riskLevel} Thresholds: {status.veryLowVolumeThreshold}g /{" "}
+                              Seed Class: {item.seedClass} Thresholds: {status.veryLowVolumeThreshold}g /{" "}
                               {status.lowVolumeThreshold}g
                             </div>
                           </div>
