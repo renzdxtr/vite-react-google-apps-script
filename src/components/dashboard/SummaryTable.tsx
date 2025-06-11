@@ -20,7 +20,8 @@ import {
   EXPIRY_WARNING_THRESHOLD, 
   HIGH_WITHDRAWAL_THRESHOLD,
   CROP_VOLUME_THRESHOLDS,
-  DEFAULT_THRESHOLDS
+  DEFAULT_THRESHOLDS,
+  DROPDOWN_CHOICES
 } from "@/lib/constants"
 
 // Note: This component assumes shadcn/ui components are available
@@ -94,6 +95,10 @@ export default function EnhancedSummaryTable({ data, title = "Enhanced Summary T
   const [dateFromFilter, setDateFromFilter] = React.useState("")
   const [dateToFilter, setDateToFilter] = React.useState("")
   const [statusFilter, setStatusFilter] = React.useState("all")
+  // Add new state variables for crop, seed class, and inventory filters
+  const [cropFilter, setCropFilter] = React.useState("all")
+  const [seedClassFilter, setSeedClassFilter] = React.useState("all")
+  const [inventoryFilter, setInventoryFilter] = React.useState("all")
   const [selectedRowIndex, setSelectedRowIndex] = React.useState<number | null>(null)
   const [currentPage, setCurrentPage] = React.useState(1)
   const [pageSize, setPageSize] = React.useState(10)
@@ -108,6 +113,12 @@ export default function EnhancedSummaryTable({ data, title = "Enhanced Summary T
   React.useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Get unique crop values from data
+  const uniqueCrops = React.useMemo(() => {
+    const crops = [...new Set(summaryData.map(item => item.crop))].filter(Boolean);
+    return crops.sort();
+  }, [summaryData]);
 
   // Get crop-specific thresholds
   const getCropThresholds = (cropName: string): [number, number] => {
@@ -171,7 +182,7 @@ export default function EnhancedSummaryTable({ data, title = "Enhanced Summary T
     [dateFromFilter, dateToFilter],
   )
 
-  // Filter data based on search query and date range
+  // Filter data based on search query, date range, and new filters
   const filteredData = React.useMemo(() => {
     let filtered = summaryData
 
@@ -181,8 +192,8 @@ export default function EnhancedSummaryTable({ data, title = "Enhanced Summary T
       filtered = filtered.filter(
         (item) =>
           item.optionValue.toLowerCase().includes(lowerCaseQuery) ||
-          item.status.toLowerCase().includes(lowerCaseQuery) ||
-          item.riskLevel.toLowerCase().includes(lowerCaseQuery) ||
+          item.status?.toLowerCase().includes(lowerCaseQuery) ||
+          item.riskLevel?.toLowerCase().includes(lowerCaseQuery) ||
           item.id.toString().includes(lowerCaseQuery) ||
           (item.crop && item.crop.toLowerCase().includes(lowerCaseQuery)),
       )
@@ -221,8 +232,23 @@ export default function EnhancedSummaryTable({ data, title = "Enhanced Summary T
       })
     }
 
+    // Crop filter
+    if (cropFilter !== "all") {
+      filtered = filtered.filter((item) => item.crop === cropFilter)
+    }
+
+    // Seed Class filter
+    if (seedClassFilter !== "all") {
+      filtered = filtered.filter((item) => item.seedClass === seedClassFilter)
+    }
+
+    // Inventory filter
+    if (inventoryFilter !== "all") {
+      filtered = filtered.filter((item) => (item.INVENTORY || "Seed Storage") === inventoryFilter)
+    }
+
     return filtered
-  }, [summaryData, searchQuery, dateFromFilter, dateToFilter, statusFilter])
+  }, [summaryData, searchQuery, dateFromFilter, dateToFilter, statusFilter, cropFilter, seedClassFilter, inventoryFilter])
 
   // Sort data when sort config changes
   const sortedData = React.useMemo(() => {
@@ -250,7 +276,7 @@ export default function EnhancedSummaryTable({ data, title = "Enhanced Summary T
   React.useEffect(() => {
     setCurrentPage(1)
     setSelectedRowIndex(null)
-  }, [searchQuery, sortConfig, dateFromFilter, dateToFilter, statusFilter])
+  }, [searchQuery, sortConfig, dateFromFilter, dateToFilter, statusFilter, cropFilter, seedClassFilter, inventoryFilter])
 
   // Reset to first page when page size changes
   React.useEffect(() => {
@@ -344,6 +370,22 @@ export default function EnhancedSummaryTable({ data, title = "Enhanced Summary T
     )
   }
 
+  // Function to clear all filters
+  const clearAllFilters = () => {
+    setSearchQuery("")
+    setDateFromFilter("")
+    setDateToFilter("")
+    setStatusFilter("all")
+    setCropFilter("all")
+    setSeedClassFilter("all")
+    setInventoryFilter("all")
+  }
+
+  // Check if any filters are active
+  const hasActiveFilters = searchQuery || dateFromFilter || dateToFilter || 
+    statusFilter !== "all" || cropFilter !== "all" || 
+    seedClassFilter !== "all" || inventoryFilter !== "all"
+
   return (
     <Card className="w-full">
       <CardHeader className="pb-4">
@@ -354,6 +396,9 @@ export default function EnhancedSummaryTable({ data, title = "Enhanced Summary T
               Monitor crop seed inventory and usage with crop-specific thresholds
               {searchQuery && ` - Filtered by "${searchQuery}"`}
               {(dateFromFilter || dateToFilter) && ` - Date filtered`}
+              {cropFilter !== "all" && ` - Crop: ${cropFilter}`}
+              {seedClassFilter !== "all" && ` - Seed Class: ${seedClassFilter}`}
+              {inventoryFilter !== "all" && ` - Inventory: ${inventoryFilter}`}
             </CardDescription>
           </div>
 
@@ -405,46 +450,85 @@ export default function EnhancedSummaryTable({ data, title = "Enhanced Summary T
                 />
               </div>
 
-              {/* Status and page size */}
-              <div className="flex gap-3">
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="h-10 w-full sm:w-32">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="critical">Critical</SelectItem>
-                    <SelectItem value="warning">Warning</SelectItem>
-                    <SelectItem value="normal">Normal</SelectItem>
-                  </SelectContent>
-                </Select>
+              {/* Status filter */}
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="h-10 w-full sm:w-32">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="critical">Critical</SelectItem>
+                  <SelectItem value="warning">Warning</SelectItem>
+                  <SelectItem value="normal">Normal</SelectItem>
+                </SelectContent>
+              </Select>
 
-                <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-                  <SelectTrigger className="h-10 w-20 sm:w-24">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PAGE_SIZE_OPTIONS.map((size) => (
-                      <SelectItem key={size} value={size.toString()}>
-                        {size}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Crop filter */}
+              <Select value={cropFilter} onValueChange={setCropFilter}>
+                <SelectTrigger className="h-10 w-full sm:w-32">
+                  <SelectValue placeholder="Crop" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Crops</SelectItem>
+                  {uniqueCrops.map((crop) => (
+                    <SelectItem key={crop} value={crop}>
+                      {crop}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Seed Class filter */}
+              <Select value={seedClassFilter} onValueChange={setSeedClassFilter}>
+                <SelectTrigger className="h-10 w-full sm:w-32">
+                  <SelectValue placeholder="Seed Class" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Classes</SelectItem>
+                  {DROPDOWN_CHOICES.SEED_CLASS.map((seedClass) => (
+                    <SelectItem key={seedClass} value={seedClass}>
+                      {seedClass}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Inventory filter */}
+              <Select value={inventoryFilter} onValueChange={setInventoryFilter}>
+                <SelectTrigger className="h-10 w-full sm:w-32">
+                  <SelectValue placeholder="Inventory" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Inventory</SelectItem>
+                  {DROPDOWN_CHOICES.INVENTORY.map((inventory) => (
+                    <SelectItem key={inventory} value={inventory}>
+                      {inventory}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Page size */}
+              <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+                <SelectTrigger className="h-10 w-20 sm:w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAGE_SIZE_OPTIONS.map((size) => (
+                    <SelectItem key={size} value={size.toString()}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
               {/* Clear filters button */}
               <div className="pt-2">
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    setSearchQuery("")
-                    setDateFromFilter("")
-                    setDateToFilter("")
-                    setStatusFilter("all")
-                  }}
+                  onClick={clearAllFilters}
                   className="h-9 text-sm w-full sm:w-auto"
-                  disabled={!searchQuery && !dateFromFilter && !dateToFilter && statusFilter === "all"}
+                  disabled={!hasActiveFilters}
                 >
                   Clear Filters
                 </Button>
