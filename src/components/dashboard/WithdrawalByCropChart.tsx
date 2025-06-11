@@ -107,8 +107,9 @@ export default function WithdrawalByCropChart({ data }: WithdrawalByCropChartPro
   // Update the CustomTooltip component
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const unit = getUnitByInventoryType(selectedInventory);
-      // const unit = getUnitByInventoryType(inventoryFilter);
+      // Replace selectedInventory with inventoryFilter
+      const unit = getUnitByInventoryType(inventoryFilter);
+      // const unit = getUnitByInventoryType(inventoryFilter); (this commented line was correct)
       
       return (
         <div className="bg-white p-3 border rounded-lg shadow-lg max-w-xs">
@@ -201,7 +202,8 @@ export default function WithdrawalByCropChart({ data }: WithdrawalByCropChartPro
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickFormatter={(value) => `${value}${getUnitByInventoryType(selectedInventory)}`}
+              // Replace selectedInventory with inventoryFilter
+              tickFormatter={(value) => `${value}${getUnitByInventoryType(inventoryFilter)}`}
               fontSize={12}
             />
             <ChartTooltip content={<CustomTooltip />} />

@@ -17,25 +17,64 @@ interface StockByLocationBarChartProps {
 export default function StockByLocationBarChart({ data }: StockByLocationBarChartProps) {
   const [dateFilter, setDateFilter] = React.useState("all")
   const [mounted, setMounted] = React.useState(false)
+  const [selectedInventoryType, setSelectedInventoryType] = React.useState<string | null>(null)
 
   // Ensure component is mounted before rendering chart
   React.useEffect(() => {
     setMounted(true)
   }, [])
 
+  // Add this helper function
+  const getUnitByInventoryType = (inventoryType: string) => {
+    return inventoryType === "Planting Materials" ? "pc" : "g";
+  }
+  
+  // Get unique inventory types from data
+  const inventoryTypes = React.useMemo(() => {
+    const types = [...new Set(data.map(item => item.INVENTORY || "Seed Storage"))];
+    // If we have multiple types and no selection yet, select the first one
+    if (types.length > 0 && !selectedInventoryType) {
+      setSelectedInventoryType(types[0]);
+    }
+    return types;
+  }, [data, selectedInventoryType]);
+  
+  // Filter data by selected inventory type
+  const filteredData = React.useMemo(() => {
+    if (!selectedInventoryType) return data;
+    
+    // First filter by inventory type
+    const inventoryFiltered = data.filter(item => (item.INVENTORY || "Seed Storage") === selectedInventoryType);
+    
+    // Then filter by location based on inventory type
+    if (selectedInventoryType === "Planting Materials") {
+      // For Planting Materials, only show Plant Nursery location
+      return inventoryFiltered.filter(item => item.LOCATION === "Plant Nursery");
+    } else if (selectedInventoryType === "Seed Storage") {
+      // For Seed Storage, only show Organic and Conventional locations
+      return inventoryFiltered.filter(item => 
+        item.LOCATION === "Organic" || item.LOCATION === "Conventional"
+      );
+    }
+    
+    return inventoryFiltered;
+  }, [data, selectedInventoryType]);
+  
+  const unit = selectedInventoryType ? getUnitByInventoryType(selectedInventoryType) : "g";
+
   // Get unique crops for chart config
   const allCrops = React.useMemo(() => {
-    return [...new Set(data.map((item) => item.CROP))]
-  }, [data])
+    return [...new Set(filteredData.map((item) => item.CROP))]
+  }, [filteredData])
 
   // Process data to group by location and stack by crop
   const processedData = React.useMemo(() => {
     // Filter data based on stored date (monthly)
-    let filteredData = data
+    let dateFilteredData = filteredData
 
     if (dateFilter !== "all") {
       const [year, month] = dateFilter.split("-")
-      filteredData = data.filter((item) => {
+      dateFilteredData = filteredData.filter((item) => {
         const storedDate = new Date(item.STORED_DATE)
         const itemYear = storedDate.getFullYear().toString()
         const itemMonth = (storedDate.getMonth() + 1).toString().padStart(2, "0")
@@ -44,7 +83,7 @@ export default function StockByLocationBarChart({ data }: StockByLocationBarChar
     }
 
     // Group by location and organize by crop
-    const locationData = filteredData.reduce(
+    const locationData = dateFilteredData.reduce(
       (acc, item) => {
         const location = item.LOCATION
         if (!acc[location]) {
@@ -75,7 +114,7 @@ export default function StockByLocationBarChart({ data }: StockByLocationBarChar
     )
 
     return Object.values(locationData).sort((a: any, b: any) => b.totalVolume - a.totalVolume)
-  }, [dateFilter, allCrops, data])
+  }, [dateFilter, allCrops, filteredData])
 
   // Generate chart config
   const chartConfig = React.useMemo(() => {
@@ -92,27 +131,14 @@ export default function StockByLocationBarChart({ data }: StockByLocationBarChar
   // Get unique months for filter options
   const availableMonths = React.useMemo(() => {
     const months = new Set<string>()
-    data.forEach((item) => {
+    filteredData.forEach((item) => {
       const date = new Date(item.STORED_DATE)
       const year = date.getFullYear()
       const month = (date.getMonth() + 1).toString().padStart(2, "0")
       months.add(`${year}-${month}`)
     })
     return Array.from(months).sort()
-  }, [data])
-
-  // Custom tooltip component
-  // Add this helper function
-  const getUnitByInventoryType = (inventoryType: string) => {
-    return inventoryType === "Planting Materials" ? "pc" : "g";
-  }
-  
-  // Determine the inventory type from the data
-  const inventoryType = React.useMemo(() => {
-    return data[0]?.INVENTORY || "Seed Storage";
-  }, [data]);
-  
-  const unit = getUnitByInventoryType(inventoryType);
+  }, [filteredData])
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -193,6 +219,23 @@ export default function StockByLocationBarChart({ data }: StockByLocationBarChar
           <CardDescription className="text-sm">
             Stacked seed volume by storage location and crop type
             {dateFilter !== "all" && ` - ${formatMonth(dateFilter)}`}
+            {inventoryTypes.length > 1 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {inventoryTypes.map(type => (
+                  <button
+                    key={type}
+                    onClick={() => setSelectedInventoryType(type)}
+                    className={`px-2 py-1 text-xs rounded ${
+                      selectedInventoryType === type 
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    {type} ({getUnitByInventoryType(type)})
+                  </button>
+                ))}
+              </div>
+            )}
           </CardDescription>
         </div>
         <Select value={dateFilter} onValueChange={setDateFilter}>

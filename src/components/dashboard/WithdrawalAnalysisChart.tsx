@@ -8,12 +8,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { type ChartConfig, ChartContainer, ChartTooltip } from "@/components/ui/chart"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
+// Change the component props to accept both withdrawal and inventory data
 interface WithdrawalAnalysisChartProps {
   data: any[]
+  inventoryData?: any[] // Add this to receive inventory data
 }
 
-export default function WithdrawalAnalysisChart({ data }: WithdrawalAnalysisChartProps) {
+export default function WithdrawalAnalysisChart({ data, inventoryData = [] }: WithdrawalAnalysisChartProps) {
   const [timeFilter, setTimeFilter] = React.useState("daily")
+  const [inventoryFilter, setInventoryFilter] = React.useState("all") // Add inventory filter state
   const [mounted, setMounted] = React.useState(false)
 
   // Ensure component is mounted before rendering chart
@@ -31,8 +34,26 @@ export default function WithdrawalAnalysisChart({ data }: WithdrawalAnalysisChar
 
   // Process data to analyze withdrawal patterns by time of day
   const processedData = React.useMemo(() => {
+    // Create a lookup map for inventory items by CODE
+    const inventoryMap = inventoryData.reduce(
+      (map, item) => {
+        map[item.CODE] = item
+        return map
+      },
+      {} as Record<string, any>,
+    )
+
+    // Filter by inventory type if selected
+    let filteredData = data
+    if (inventoryFilter !== "all") {
+      filteredData = data.filter((item) => {
+        const inventoryItem = inventoryMap[item.QR_CODE] || {}
+        return inventoryItem.INVENTORY === inventoryFilter
+      })
+    }
+    
     // Parse timestamps and group by date/hour
-    const withdrawalsByTime = data.reduce((acc, item) => {
+    const withdrawalsByTime = filteredData.reduce((acc, item) => {
       const timestamp = new Date(item.TIMESTAMP)
       if (isNaN(timestamp.getTime())) return acc
 
@@ -76,6 +97,7 @@ export default function WithdrawalAnalysisChart({ data }: WithdrawalAnalysisChar
           evening: 0,
           total: 0,
           transactions: 0,
+          inventoryType: inventoryFilter !== "all" ? inventoryFilter : "Seed Storage", // Store inventory type for tooltip
         }
       }
 
@@ -91,7 +113,7 @@ export default function WithdrawalAnalysisChart({ data }: WithdrawalAnalysisChar
     return Object.values(withdrawalsByTime)
       .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .slice(-20) // Show last 20 periods for better visualization
-  }, [timeFilter, data])
+  }, [timeFilter, data, inventoryFilter, inventoryData]) // Add inventoryFilter dependency
 
   // Generate chart config
   const chartConfig = React.useMemo(() => {
@@ -125,7 +147,7 @@ export default function WithdrawalAnalysisChart({ data }: WithdrawalAnalysisChar
   // Update the CustomTooltip component
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const unit = getUnitByInventoryType(payload[0]?.payload?.inventoryType || "Seed Storage");
+      const unit = getUnitByInventoryType(payload[0]?.payload?.inventoryType || inventoryFilter);
       
       return (
         <div className="bg-white p-3 border rounded-lg shadow-lg max-w-xs">
@@ -169,39 +191,63 @@ export default function WithdrawalAnalysisChart({ data }: WithdrawalAnalysisChar
       <CardHeader className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-2 border-b py-4">
         <div className="flex-1">
           <CardTitle className="text-lg">Withdrawal Time Analysis</CardTitle>
-          <CardDescription className="text-sm">Seed withdrawal patterns by time of day</CardDescription>
+          <CardDescription className="text-sm">
+            Seed withdrawal patterns by time of day
+            {inventoryFilter !== "all" && ` - ${inventoryFilter}`}
+          </CardDescription>
         </div>
-        <Select value={timeFilter} onValueChange={setTimeFilter}>
-          <SelectTrigger className="w-full sm:w-[140px] rounded-lg" aria-label="Time view">
-            <SelectValue placeholder="View by" />
-          </SelectTrigger>
-          <SelectContent className="rounded-xl">
-            <SelectItem value="daily" className="rounded-lg">
-              <div className="flex items-center">
-                <Calendar className="mr-2 h-4 w-4" />
-                Daily View
-              </div>
-            </SelectItem>
-            <SelectItem value="weekly" className="rounded-lg">
-              <div className="flex items-center">
-                <Clock className="mr-2 h-4 w-4" />
-                Weekly View
-              </div>
-            </SelectItem>
-            <SelectItem value="monthly" className="rounded-lg">
-              <div className="flex items-center">
-                <TrendingUp className="mr-2 h-4 w-4" />
-                Monthly View
-              </div>
-            </SelectItem>
-            <SelectItem value="yearly" className="rounded-lg">
-              <div className="flex items-center">
-                <Calendar className="mr-2 h-4 w-4" />
-                Yearly View
-              </div>
-            </SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex flex-col sm:flex-row gap-2">
+          {/* Add inventory filter select */}
+          <Select value={inventoryFilter} onValueChange={setInventoryFilter}>
+            <SelectTrigger className="w-full sm:w-[180px] rounded-lg" aria-label="Filter by inventory">
+              <SelectValue placeholder="Filter by inventory" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              <SelectItem value="all" className="rounded-lg">
+                All Inventory
+              </SelectItem>
+              <SelectItem value="Seed Storage" className="rounded-lg">
+                Seed Storage
+              </SelectItem>
+              <SelectItem value="Planting Materials" className="rounded-lg">
+                Planting Materials
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          
+          {/* Existing time filter select */}
+          <Select value={timeFilter} onValueChange={setTimeFilter}>
+            <SelectTrigger className="w-full sm:w-[140px] rounded-lg" aria-label="Time view">
+              <SelectValue placeholder="View by" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              <SelectItem value="daily" className="rounded-lg">
+                <div className="flex items-center">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Daily View
+                </div>
+              </SelectItem>
+              <SelectItem value="weekly" className="rounded-lg">
+                <div className="flex items-center">
+                  <Clock className="mr-2 h-4 w-4" />
+                  Weekly View
+                </div>
+              </SelectItem>
+              <SelectItem value="monthly" className="rounded-lg">
+                <div className="flex items-center">
+                  <TrendingUp className="mr-2 h-4 w-4" />
+                  Monthly View
+                </div>
+              </SelectItem>
+              <SelectItem value="yearly" className="rounded-lg">
+                <div className="flex items-center">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Yearly View
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </CardHeader>
       <CardContent className="p-4">
         <ChartContainer config={chartConfig} className="aspect-auto h-[300px] sm:h-[400px] w-full">
@@ -231,7 +277,7 @@ export default function WithdrawalAnalysisChart({ data }: WithdrawalAnalysisChar
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
-                tickFormatter={(value) => `${value}${getUnitByInventoryType(data[0]?.INVENTORY || "Seed Storage")}`}
+                tickFormatter={(value) => `${value}${getUnitByInventoryType(inventoryFilter !== "all" ? inventoryFilter : "Seed Storage")}`}
                 fontSize={12}
               />
               <ChartTooltip content={<CustomTooltip />} />

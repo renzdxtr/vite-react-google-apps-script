@@ -122,7 +122,7 @@ export default function DashboardPage() {
                                     <WithdrawalByCropChart data={joinedData} />
                                 </div>
                                 <div data-chart-id="withdrawalAnalysis" className="min-w-0">
-                                    <WithdrawalAnalysisChart data={withdrawalData} />
+                                    <WithdrawalAnalysisChart data={withdrawalData} inventoryData={inventoryData} />
                                 </div>
                                 <div data-chart-id="withdrawalTrend" className="min-w-0">
                                     <WithdrawalTrendLineChart data={withdrawalData} />
