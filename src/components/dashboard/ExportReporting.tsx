@@ -30,9 +30,9 @@ interface ExportReportingProps {
   alerts: any[]
 }
 
-// Define the dimensions for the canvas
-const cardStyleDimension = { 'WIDTH': '2000px', 'HEIGHT': '500px' }
-const canvasDimension = { 'WIDTH': 2000, 'HEIGHT': 500 }
+// Define the dimensions for the canvas - increase height for better visibility
+const cardStyleDimension = { 'WIDTH': '1800px', 'HEIGHT': '500px' }
+const canvasDimension = { 'WIDTH': 1800, 'HEIGHT': 500 }
 
 export default function ExportReporting({ joinedData, withdrawalData, metrics, alerts }: ExportReportingProps) {
   const [dateFrom, setDateFrom] = React.useState("")
@@ -337,19 +337,19 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
         height: number
       ) {
         // Add chart title
-        doc.setFontSize(14)
+        doc.setFontSize(16) // Increased from 14
         doc.setTextColor(0, 0, 0)
         const chartTitle = getChartTitle(chartId)
-        doc.text(chartTitle, x, y + 10) // Added 10mm to y position to avoid overlap
+        doc.text(chartTitle, x, y + 10)
 
-        const titleHeight = 12 // Increased from 8 to 12 to provide more space
+        const titleHeight = 15 // Increased from 12
         const chartY = y + titleHeight
 
         // Capture and add chart image
         const chartImage = await captureChart(chartId)
         if (chartImage) {
           // Calculate chart image dimensions (maintain aspect ratio within bounds)
-          const imageHeight = height - titleHeight - 10 // Reduced from 15 to 10
+          const imageHeight = height - titleHeight - 20 // Increased space for description
           const aspectRatio = 4 / 3 // 4:3 aspect ratio
 
           let imgWidth = width
@@ -367,8 +367,8 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
           doc.addImage(chartImage, "PNG", xOffset, chartY, imgWidth, imgHeight)
 
           // Add chart description below the image
-          const descriptionY = chartY + imgHeight + 5 // 5mm space below the image
-          doc.setFontSize(8)
+          const descriptionY = chartY + imgHeight + 10 // Increased from 5
+          doc.setFontSize(10) // Increased from 8
           doc.setTextColor(80, 80, 80) // Gray color for description
 
           const description = getChartDescription(chartId, filteredData, filteredWithdrawals)
@@ -377,11 +377,11 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
 
           // Limit description to fit remaining space
           const remainingHeight = height - (descriptionY - y)
-          const maxLines = Math.floor(remainingHeight / 3) // 3mm per line
+          const maxLines = Math.floor(remainingHeight / 4) // Increased from 3mm to 4mm per line
           const limitedLines = descriptionLines.slice(0, maxLines)
 
           limitedLines.forEach((line: string, index: number) => {
-            doc.text(line, x, descriptionY + (index * 3))
+            doc.text(line, x, descriptionY + (index * 4)) // Increased from 3 to 4
           })
         }
       }
@@ -839,6 +839,56 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
           }}
         >
           <WithdrawalTrendLineChart data={filteredWithdrawals} />
+        </div>
+
+        {/* Add the missing releaseLog chart component */}
+        <div
+          data-chart-id="releaseLog-export"
+          style={{
+            width: cardStyleDimension.WIDTH,
+            height: cardStyleDimension.HEIGHT,
+            padding: '40px',
+            backgroundColor: 'white',
+            border: 'none',
+            boxShadow: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          {/* You need to create a ReleaseLogTable component or use an existing component */}
+          <div className="w-full overflow-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border p-2 text-left">Date</th>
+                  <th className="border p-2 text-left">QR Code</th>
+                  <th className="border p-2 text-left">Crop</th>
+                  <th className="border p-2 text-left">Variety</th>
+                  <th className="border p-2 text-left">Amount</th>
+                  <th className="border p-2 text-left">Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredWithdrawals.slice(0, 10).map((item, index) => {
+                  // Find the inventory item to get crop and variety
+                  const inventoryItem = joinedData.find(inv => inv.CODE === item.QR_CODE) || {}
+                  const unit = inventoryItem.INVENTORY ? getVolumeUnit(inventoryItem.INVENTORY) : 'g'
+                  
+                  return (
+                    <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="border p-2">{new Date(item.TIMESTAMP).toLocaleDateString()}</td>
+                      <td className="border p-2">{item.QR_CODE}</td>
+                      <td className="border p-2">{inventoryItem.CROP || 'N/A'}</td>
+                      <td className="border p-2">{inventoryItem.VARIETY || 'N/A'}</td>
+                      <td className="border p-2">{item.AMOUNT}{unit}</td>
+                      <td className="border p-2">{item.REASON || 'Not specified'}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
