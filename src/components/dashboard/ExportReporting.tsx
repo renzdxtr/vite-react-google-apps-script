@@ -427,13 +427,13 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
         y: number,
         width: number
       ) {
-        doc.setFontSize(12)
-        doc.setTextColor(0, 0, 0)
-        doc.text("Tabular Data", x, y)
-        y += 8
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0);
+        doc.text("Tabular Data", x, y);
+        y += 8;
         
-        doc.setFontSize(8)
-        doc.setTextColor(0, 0, 0)
+        doc.setFontSize(8);
+        doc.setTextColor(0, 0, 0);
         
         // Different tabular data based on chart type
         if (chartId.startsWith("stockBySeedClass")) {
@@ -451,7 +451,7 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
             if (!seedClassData[item.SEED_CLASS]) {
               seedClassData[item.SEED_CLASS] = {volume: 0, count: 0};
             }
-            seedClassData[item.SEED_CLASS].volume += item.VOLUME;
+            seedClassData[item.SEED_CLASS].volume += item.remainingVolume || item.VOLUME;
             seedClassData[item.SEED_CLASS].count += 1;
           });
           
@@ -482,13 +482,192 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
             y += 4;
           });
         } else if (chartId.startsWith("stockByLocation")) {
-          // Similar implementation for location-based charts
-          // ...
+          // Implementation for location-based charts
+          const inventoryType = chartId.includes("PlantingMaterials") ? "Planting Materials" : "Seed Storage";
+          const filteredByInventory = filteredData.filter(item => 
+            inventoryType === "Seed Storage" ? 
+              (item.INVENTORY === "Seed Storage" || !item.INVENTORY) : 
+              item.INVENTORY === inventoryType
+          );
+          
+          // Group by location
+          const locationData: Record<string, {volume: number, count: number}> = {};
+          filteredByInventory.forEach(item => {
+            if (!locationData[item.LOCATION]) {
+              locationData[item.LOCATION] = {volume: 0, count: 0};
+            }
+            locationData[item.LOCATION].volume += item.remainingVolume || item.VOLUME;
+            locationData[item.LOCATION].count += 1;
+          });
+          
+          // Create table
+          const unit = inventoryType === "Planting Materials" ? "pcs" : "g";
+          const headers = ["Location", `Volume (${unit})`, "Item Count", "Percentage"];
+          const totalVolume = Object.values(locationData).reduce((sum, data) => sum + data.volume, 0);
+          
+          // Draw table headers
+          const colWidths = [50, 40, 40, 40];
+          let xPos = x;
+          headers.forEach((header, i) => {
+            doc.text(header, xPos, y);
+            xPos += colWidths[i];
+          });
+          y += 5;
+          
+          // Draw table rows
+          Object.entries(locationData).forEach(([location, data]) => {
+            const percentage = totalVolume > 0 ? ((data.volume / totalVolume) * 100).toFixed(1) : "0.0";
+            const rowData = [location, data.volume.toString(), data.count.toString(), `${percentage}%`];
+            
+            xPos = x;
+            rowData.forEach((cell, i) => {
+              doc.text(cell, xPos, y);
+              xPos += colWidths[i];
+            });
+            y += 4;
+          });
         } else if (chartId === "withdrawalTrend") {
           // Tabular data for withdrawal trends
-          // ...
+          // Group withdrawals by month
+          const monthlyData: Record<string, number> = {};
+          
+          filteredWithdrawals.forEach(item => {
+            const date = new Date(item.TIMESTAMP);
+            const monthYear = `${date.getMonth() + 1}/${date.getFullYear()}`;
+            
+            if (!monthlyData[monthYear]) {
+              monthlyData[monthYear] = 0;
+            }
+            monthlyData[monthYear] += Number(item.AMOUNT) || 0;
+          });
+          
+          // Create table
+          const headers = ["Month/Year", "Total Withdrawal Volume"];
+          
+          // Draw table headers
+          const colWidths = [50, 60];
+          let xPos = x;
+          headers.forEach((header, i) => {
+            doc.text(header, xPos, y);
+            xPos += colWidths[i];
+          });
+          y += 5;
+          
+          // Draw table rows
+          Object.entries(monthlyData)
+            .sort((a, b) => {
+              const [aMonth, aYear] = a[0].split('/');
+              const [bMonth, bYear] = b[0].split('/');
+              return new Date(Number(aYear), Number(aMonth) - 1).getTime() - 
+                     new Date(Number(bYear), Number(bMonth) - 1).getTime();
+            })
+            .forEach(([monthYear, volume]) => {
+              const rowData = [monthYear, volume.toString()];
+              
+              xPos = x;
+              rowData.forEach((cell, i) => {
+                doc.text(cell, xPos, y);
+                xPos += colWidths[i];
+              });
+              y += 4;
+            });
+        } else if (chartId === "withdrawalAnalysis") {
+          // Tabular data for withdrawal time analysis
+          // Group withdrawals by time of day
+          const timeData = {
+            morning: 0,   // 6:00 AM - 11:59 AM
+            afternoon: 0, // 12:00 PM - 5:59 PM
+            evening: 0    // 6:00 PM - 5:59 AM
+          };
+          
+          filteredWithdrawals.forEach(item => {
+            const date = new Date(item.TIMESTAMP);
+            const hour = date.getHours();
+            
+            if (hour >= 6 && hour < 12) {
+              timeData.morning += Number(item.AMOUNT) || 0;
+            } else if (hour >= 12 && hour < 18) {
+              timeData.afternoon += Number(item.AMOUNT) || 0;
+            } else {
+              timeData.evening += Number(item.AMOUNT) || 0;
+            }
+          });
+          
+          // Create table
+          const headers = ["Time Period", "Total Withdrawal Volume", "Percentage"];
+          const totalVolume = Object.values(timeData).reduce((sum, volume) => sum + volume, 0);
+          
+          // Draw table headers
+          const colWidths = [50, 60, 40];
+          let xPos = x;
+          headers.forEach((header, i) => {
+            doc.text(header, xPos, y);
+            xPos += colWidths[i];
+          });
+          y += 5;
+          
+          // Draw table rows
+          const timePeriods = {
+            morning: "Morning (6AM-12PM)",
+            afternoon: "Afternoon (12PM-6PM)",
+            evening: "Evening (6PM-6AM)"
+          };
+          
+          Object.entries(timeData).forEach(([period, volume]) => {
+            const percentage = totalVolume > 0 ? ((volume / totalVolume) * 100).toFixed(1) : "0.0";
+            const rowData = [timePeriods[period as keyof typeof timePeriods], volume.toString(), `${percentage}%`];
+            
+            xPos = x;
+            rowData.forEach((cell, i) => {
+              doc.text(cell, xPos, y);
+              xPos += colWidths[i];
+            });
+            y += 4;
+          });
+        } else if (chartId === "withdrawalByCrop") {
+          // Tabular data for withdrawals by crop
+          // Group withdrawals by crop
+          const cropData: Record<string, number> = {};
+          
+          filteredWithdrawals.forEach(item => {
+            // Find the inventory item to get the crop
+            const inventoryItem = joinedData.find(inv => inv.CODE === item.QR_CODE);
+            if (inventoryItem && inventoryItem.CROP) {
+              if (!cropData[inventoryItem.CROP]) {
+                cropData[inventoryItem.CROP] = 0;
+              }
+              cropData[inventoryItem.CROP] += Number(item.AMOUNT) || 0;
+            }
+          });
+          
+          // Create table
+          const headers = ["Crop", "Total Withdrawal Volume", "Percentage"];
+          const totalVolume = Object.values(cropData).reduce((sum, volume) => sum + volume, 0);
+          
+          // Draw table headers
+          const colWidths = [50, 60, 40];
+          let xPos = x;
+          headers.forEach((header, i) => {
+            doc.text(header, xPos, y);
+            xPos += colWidths[i];
+          });
+          y += 5;
+          
+          // Draw table rows
+          Object.entries(cropData)
+            .sort((a, b) => b[1] - a[1]) // Sort by volume, descending
+            .forEach(([crop, volume]) => {
+              const percentage = totalVolume > 0 ? ((volume / totalVolume) * 100).toFixed(1) : "0.0";
+              const rowData = [crop, volume.toString(), `${percentage}%`];
+              
+              xPos = x;
+              rowData.forEach((cell, i) => {
+                doc.text(cell, xPos, y);
+                xPos += colWidths[i];
+              });
+              y += 4;
+            });
         }
-        // Add more chart types as needed
       }
 
       // Detailed Tables (if detailed report)
@@ -502,7 +681,162 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
         bookmarks["Detailed Data"] = { pageNumber: doc.getCurrentPageInfo().pageNumber, yPosition }
         yPosition += 15
 
-        // Rest of the detailed tables code...
+        // Create detailed inventory table
+        doc.setFontSize(10)
+        doc.text(`Showing ${Math.min(filteredData.length, 50)} of ${filteredData.length} items`, 20, yPosition)
+        yPosition += 10
+        
+        // Table headers
+        doc.setFontSize(8)
+        doc.setTextColor(100, 100, 100)
+        
+        const headers = ["Code", "Crop", "Variety", "Seed Class", "Location", "Inventory", "Remaining", "Status"];
+        const colWidths = [25, 25, 25, 25, 25, 25, 25, 20];
+        
+        let xPos = 20;
+        headers.forEach((header, i) => {
+          doc.text(header, xPos, yPosition);
+          xPos += colWidths[i];
+        });
+        yPosition += 5;
+        
+        // Table rows - limit to 50 items to avoid excessive pages
+        doc.setTextColor(0, 0, 0);
+        const itemsToShow = filteredData.slice(0, 50);
+        
+        itemsToShow.forEach((item, index) => {
+          // Add page break if needed
+          if (yPosition > 270) {
+            doc.addPage();
+            yPosition = 20;
+            
+            // Repeat headers on new page
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            xPos = 20;
+            headers.forEach((header, i) => {
+              doc.text(header, xPos, yPosition);
+              xPos += colWidths[i];
+            });
+            yPosition += 5;
+            doc.setTextColor(0, 0, 0);
+          }
+          
+          // Alternate row colors
+          if (index % 2 === 1) {
+            doc.setFillColor(240, 240, 240);
+            doc.rect(20, yPosition - 3, 195, 4, 'F');
+          }
+          
+          const status = getItemStatus(item);
+          const statusColor = status === "Critical" ? "#ff0000" : status === "Low" ? "#ffa500" : "#008000";
+          
+          const unit = item.INVENTORY === "Planting Materials" ? "pcs" : "g";
+          const rowData = [
+            item.CODE.substring(0, 10),
+            item.CROP,
+            item.VARIETY.substring(0, 10),
+            item.SEED_CLASS,
+            item.LOCATION,
+            item.INVENTORY || "Seed Storage",
+            `${item.remainingVolume || item.VOLUME}${unit}`,
+            status
+          ];
+          
+          xPos = 20;
+          rowData.forEach((cell, i) => {
+            // Use color for status column
+            if (i === 7) {
+              const originalTextColor = doc.getTextColor();
+              doc.setTextColor(statusColor);
+              doc.text(cell, xPos, yPosition);
+              doc.setTextColor(originalTextColor);
+            } else {
+              doc.text(cell, xPos, yPosition);
+            }
+            xPos += colWidths[i];
+          });
+          yPosition += 4;
+        });
+        
+        // Add withdrawal data table if there are withdrawals
+        if (filteredWithdrawals.length > 0) {
+          doc.addPage();
+          yPosition = 20;
+          
+          doc.setFontSize(16);
+          doc.text("Recent Withdrawals", 20, yPosition);
+          yPosition += 15;
+          
+          doc.setFontSize(10);
+          doc.text(`Showing ${Math.min(filteredWithdrawals.length, 50)} of ${filteredWithdrawals.length} withdrawals`, 20, yPosition);
+          yPosition += 10;
+          
+          // Table headers
+          doc.setFontSize(8);
+          doc.setTextColor(100, 100, 100);
+          
+          const wHeaders = ["Date", "QR Code", "Amount", "Previous", "New Value", "Reason", "User"];
+          const wColWidths = [30, 30, 25, 25, 25, 40, 25];
+          
+          xPos = 20;
+          wHeaders.forEach((header, i) => {
+            doc.text(header, xPos, yPosition);
+            xPos += wColWidths[i];
+          });
+          yPosition += 5;
+          
+          // Table rows - limit to 50 items
+          doc.setTextColor(0, 0, 0);
+          const withdrawalsToShow = filteredWithdrawals.slice(0, 50);
+          
+          withdrawalsToShow.forEach((item, index) => {
+            // Add page break if needed
+            if (yPosition > 270) {
+              doc.addPage();
+              yPosition = 20;
+              
+              // Repeat headers on new page
+              doc.setFontSize(8);
+              doc.setTextColor(100, 100, 100);
+              xPos = 20;
+              wHeaders.forEach((header, i) => {
+                doc.text(header, xPos, yPosition);
+                xPos += wColWidths[i];
+              });
+              yPosition += 5;
+              doc.setTextColor(0, 0, 0);
+            }
+            
+            // Alternate row colors
+            if (index % 2 === 1) {
+              doc.setFillColor(240, 240, 240);
+              doc.rect(20, yPosition - 3, 195, 4, 'F');
+            }
+            
+            // Find the inventory item to determine the unit
+            const inventoryItem = joinedData.find(inv => inv.CODE === item.QR_CODE);
+            const unit = inventoryItem && inventoryItem.INVENTORY === "Planting Materials" ? "pcs" : "g";
+            
+            const date = new Date(item.TIMESTAMP).toLocaleDateString();
+            const rowData = [
+              date,
+              item.QR_CODE.substring(0, 10),
+              `${item.AMOUNT}${unit}`,
+              `${item.PREVIOUS_VALUE}${unit}`,
+              `${item.NEW_VALUE}${unit}`,
+              (item.REASON || "Not specified").substring(0, 20),
+              (item.USER || "Not specified").substring(0, 10)
+            ];
+            
+            xPos = 20;
+            rowData.forEach((cell, i) => {
+              doc.text(cell, xPos, yPosition);
+              xPos += wColWidths[i];
+            });
+            yPosition += 4;
+          });
+        }
       }
       
       // Instead, add a table of contents page
@@ -890,7 +1224,6 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
         <div
           data-chart-id="stockByLocation_PlantingMaterials-export"
           style={{
-            height: cardStyleDimension.HEIGHT,  // Increased height for better quality
             width: cardStyleDimension.WIDTH,
             height: cardStyleDimension.HEIGHT,
             padding: '40px',
