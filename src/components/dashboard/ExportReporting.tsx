@@ -17,8 +17,6 @@ import WithdrawalTrendLineChart from "@/components/dashboard/WithdrawalTrendLine
 import WithdrawalAnalysisChart from "@/components/dashboard/WithdrawalAnalysisChart"
 import WithdrawalByCropChart from "@/components/dashboard/WithdrawalByCropChart"
 
-import { jsPDF } from "jspdf";
-
 // Import the necessary constants at the top of the file
 import {
   CROP_VOLUME_THRESHOLDS,
@@ -42,16 +40,16 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
   const [reportType, setReportType] = React.useState("summary")
   // Update the selectedCharts state to include inventory-specific charts
   const [selectedCharts, setSelectedCharts] = React.useState({
-    stockBySeedClass_SeedStorage: true,
-    stockBySeedClass_PlantingMaterials: true,
-    stockByLocation_SeedStorage: true,
-    stockByLocation_PlantingMaterials: true,
-    withdrawalTrend: true,
-    withdrawalAnalysis: true,
-    withdrawalByCrop: true,
+    stockBySeedClass_SeedStorage: false,
+    stockBySeedClass_PlantingMaterials: false,
+    stockByLocation_SeedStorage: false,
+    stockByLocation_PlantingMaterials: false,
+    withdrawalTrend: false,
+    withdrawalAnalysis: false,
+    withdrawalByCrop: false,
     releaseLog: false,
   })
-  
+
   // Update the getChartTitle function
   const getChartTitle = (chartId: string) => {
     const titles = {
@@ -66,13 +64,13 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
     }
     return titles[chartId as keyof typeof titles] || chartId
   }
-  
+
   // Update the getChartDescription function
   const getChartDescription = (chartId: string, inventoryData: any[], withdrawalData: any[]) => {
     // Filter data by inventory type for specific chart descriptions
     const seedStorageData = inventoryData.filter(item => item.INVENTORY === "Seed Storage" || !item.INVENTORY);
     const plantingMaterialsData = inventoryData.filter(item => item.INVENTORY === "Planting Materials");
-    
+
     const descriptions = {
       stockBySeedClass_SeedStorage: `This pie chart illustrates the distribution of remaining seed stock across different seed classifications for Seed Storage inventory. The visualization helps identify which seed classes dominate the inventory and assists in maintaining balanced stock levels. Total items analyzed: ${seedStorageData.length}`,
       stockBySeedClass_PlantingMaterials: `This pie chart illustrates the distribution of remaining planting materials across different seed classifications. The visualization helps identify which seed classes dominate the inventory and assists in maintaining balanced stock levels. Total items analyzed: ${plantingMaterialsData.length}`,
@@ -201,7 +199,7 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
         // Find the inventory item to determine the unit
         const inventoryItem = joinedData.find(inv => inv.CODE === item.QR_CODE)
         const unit = inventoryItem ? getVolumeUnit(inventoryItem.INVENTORY) : "g"
-        
+
         return [
           item.TIMESTAMP,
           item.QR_CODE,
@@ -242,11 +240,11 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
     setIsExporting(true)
 
     try {
-      
+      const jsPDF = (await import("jspdf")).default
 
       const doc = new jsPDF()
       let yPosition = 20
-      
+
       // Add bookmarks for navigation
       let bookmarks = {
         "Executive Summary": { pageNumber: 1, yPosition: 20 },
@@ -318,18 +316,18 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
         // Add new page for charts section
         doc.addPage()
         yPosition = 20
-      
+
         doc.setFontSize(18)
         doc.text("Data Visualization and Analysis", 20, yPosition)
         // Add bookmark for Data Visualization
         bookmarks["Data Visualization"] = { pageNumber: doc.getCurrentPageInfo().pageNumber, yPosition }
         yPosition += 15
-      
+
         // Get selected charts
         const selectedChartIds = Object.entries(selectedCharts)
           .filter(([_, isSelected]) => isSelected)
           .map(([chartId, _]) => chartId)
-      
+
         // Process charts one per page for maximum visibility
         for (let i = 0; i < selectedChartIds.length; i++) {
           // Add a new page for each chart (except the first one)
@@ -337,22 +335,22 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
             doc.addPage()
           }
           yPosition = 20
-      
+
           // Calculate dimensions for full-page chart
           const pageHeight = 297 // A4 height in mm
           const availableHeight = pageHeight - 30 // Reduced top/bottom margins
           const chartHeight = availableHeight - 60 // Increased space for tabular data
           const chartWidth = 190 // Almost full page width
-      
+
           // Process chart
           const chartId = selectedChartIds[i]
           const chartTitle = getChartTitle(chartId)
-          
+
           // Add bookmark for each chart
           bookmarks[chartTitle] = { pageNumber: doc.getCurrentPageInfo().pageNumber, yPosition }
-          
+
           await renderChartToPDF(doc, chartId, 10, yPosition, chartWidth, chartHeight)
-          
+
           // Add tabular data for the chart if it's not the releaseLog
           if (chartId !== "releaseLog") {
             await addTabularDataForChart(doc, chartId, 10, yPosition + chartHeight + 10, chartWidth)
@@ -418,7 +416,7 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
           })
         }
       }
-      
+
       // Helper function to add tabular data for charts
       async function addTabularDataForChart(
         doc: any,
@@ -431,35 +429,35 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
         doc.setTextColor(0, 0, 0);
         doc.text("Tabular Data", x, y);
         y += 8;
-        
+
         doc.setFontSize(8);
         doc.setTextColor(0, 0, 0);
-        
+
         // Different tabular data based on chart type
         if (chartId.startsWith("stockBySeedClass")) {
           // Determine which inventory type to filter by
           const inventoryType = chartId.includes("PlantingMaterials") ? "Planting Materials" : "Seed Storage";
-          const filteredByInventory = filteredData.filter(item => 
-            inventoryType === "Seed Storage" ? 
-              (item.INVENTORY === "Seed Storage" || !item.INVENTORY) : 
+          const filteredByInventory = filteredData.filter(item =>
+            inventoryType === "Seed Storage" ?
+              (item.INVENTORY === "Seed Storage" || !item.INVENTORY) :
               item.INVENTORY === inventoryType
           );
-          
+
           // Group by seed class
-          const seedClassData: Record<string, {volume: number, count: number}> = {};
+          const seedClassData: Record<string, { volume: number, count: number }> = {};
           filteredByInventory.forEach(item => {
             if (!seedClassData[item.SEED_CLASS]) {
-              seedClassData[item.SEED_CLASS] = {volume: 0, count: 0};
+              seedClassData[item.SEED_CLASS] = { volume: 0, count: 0 };
             }
             seedClassData[item.SEED_CLASS].volume += item.remainingVolume || item.VOLUME;
             seedClassData[item.SEED_CLASS].count += 1;
           });
-          
+
           // Create table
           const unit = inventoryType === "Planting Materials" ? "pcs" : "g";
           const headers = ["Seed Class", `Volume (${unit})`, "Item Count", "Percentage"];
           const totalVolume = Object.values(seedClassData).reduce((sum, data) => sum + data.volume, 0);
-          
+
           // Draw table headers
           const colWidths = [50, 40, 40, 40];
           let xPos = x;
@@ -468,12 +466,12 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
             xPos += colWidths[i];
           });
           y += 5;
-          
+
           // Draw table rows
           Object.entries(seedClassData).forEach(([seedClass, data]) => {
             const percentage = totalVolume > 0 ? ((data.volume / totalVolume) * 100).toFixed(1) : "0.0";
             const rowData = [seedClass, data.volume.toString(), data.count.toString(), `${percentage}%`];
-            
+
             xPos = x;
             rowData.forEach((cell, i) => {
               doc.text(cell, xPos, y);
@@ -484,27 +482,27 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
         } else if (chartId.startsWith("stockByLocation")) {
           // Implementation for location-based charts
           const inventoryType = chartId.includes("PlantingMaterials") ? "Planting Materials" : "Seed Storage";
-          const filteredByInventory = filteredData.filter(item => 
-            inventoryType === "Seed Storage" ? 
-              (item.INVENTORY === "Seed Storage" || !item.INVENTORY) : 
+          const filteredByInventory = filteredData.filter(item =>
+            inventoryType === "Seed Storage" ?
+              (item.INVENTORY === "Seed Storage" || !item.INVENTORY) :
               item.INVENTORY === inventoryType
           );
-          
+
           // Group by location
-          const locationData: Record<string, {volume: number, count: number}> = {};
+          const locationData: Record<string, { volume: number, count: number }> = {};
           filteredByInventory.forEach(item => {
             if (!locationData[item.LOCATION]) {
-              locationData[item.LOCATION] = {volume: 0, count: 0};
+              locationData[item.LOCATION] = { volume: 0, count: 0 };
             }
             locationData[item.LOCATION].volume += item.remainingVolume || item.VOLUME;
             locationData[item.LOCATION].count += 1;
           });
-          
+
           // Create table
           const unit = inventoryType === "Planting Materials" ? "pcs" : "g";
           const headers = ["Location", `Volume (${unit})`, "Item Count", "Percentage"];
           const totalVolume = Object.values(locationData).reduce((sum, data) => sum + data.volume, 0);
-          
+
           // Draw table headers
           const colWidths = [50, 40, 40, 40];
           let xPos = x;
@@ -513,12 +511,12 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
             xPos += colWidths[i];
           });
           y += 5;
-          
+
           // Draw table rows
           Object.entries(locationData).forEach(([location, data]) => {
             const percentage = totalVolume > 0 ? ((data.volume / totalVolume) * 100).toFixed(1) : "0.0";
             const rowData = [location, data.volume.toString(), data.count.toString(), `${percentage}%`];
-            
+
             xPos = x;
             rowData.forEach((cell, i) => {
               doc.text(cell, xPos, y);
@@ -530,20 +528,20 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
           // Tabular data for withdrawal trends
           // Group withdrawals by month
           const monthlyData: Record<string, number> = {};
-          
+
           filteredWithdrawals.forEach(item => {
             const date = new Date(item.TIMESTAMP);
             const monthYear = `${date.getMonth() + 1}/${date.getFullYear()}`;
-            
+
             if (!monthlyData[monthYear]) {
               monthlyData[monthYear] = 0;
             }
             monthlyData[monthYear] += Number(item.AMOUNT) || 0;
           });
-          
+
           // Create table
           const headers = ["Month/Year", "Total Withdrawal Volume"];
-          
+
           // Draw table headers
           const colWidths = [50, 60];
           let xPos = x;
@@ -552,18 +550,18 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
             xPos += colWidths[i];
           });
           y += 5;
-          
+
           // Draw table rows
           Object.entries(monthlyData)
             .sort((a, b) => {
               const [aMonth, aYear] = a[0].split('/');
               const [bMonth, bYear] = b[0].split('/');
-              return new Date(Number(aYear), Number(aMonth) - 1).getTime() - 
-                     new Date(Number(bYear), Number(bMonth) - 1).getTime();
+              return new Date(Number(aYear), Number(aMonth) - 1).getTime() -
+                new Date(Number(bYear), Number(bMonth) - 1).getTime();
             })
             .forEach(([monthYear, volume]) => {
               const rowData = [monthYear, volume.toString()];
-              
+
               xPos = x;
               rowData.forEach((cell, i) => {
                 doc.text(cell, xPos, y);
@@ -579,11 +577,11 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
             afternoon: 0, // 12:00 PM - 5:59 PM
             evening: 0    // 6:00 PM - 5:59 AM
           };
-          
+
           filteredWithdrawals.forEach(item => {
             const date = new Date(item.TIMESTAMP);
             const hour = date.getHours();
-            
+
             if (hour >= 6 && hour < 12) {
               timeData.morning += Number(item.AMOUNT) || 0;
             } else if (hour >= 12 && hour < 18) {
@@ -592,11 +590,11 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
               timeData.evening += Number(item.AMOUNT) || 0;
             }
           });
-          
+
           // Create table
           const headers = ["Time Period", "Total Withdrawal Volume", "Percentage"];
           const totalVolume = Object.values(timeData).reduce((sum, volume) => sum + volume, 0);
-          
+
           // Draw table headers
           const colWidths = [50, 60, 40];
           let xPos = x;
@@ -605,18 +603,18 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
             xPos += colWidths[i];
           });
           y += 5;
-          
+
           // Draw table rows
           const timePeriods = {
             morning: "Morning (6AM-12PM)",
             afternoon: "Afternoon (12PM-6PM)",
             evening: "Evening (6PM-6AM)"
           };
-          
+
           Object.entries(timeData).forEach(([period, volume]) => {
             const percentage = totalVolume > 0 ? ((volume / totalVolume) * 100).toFixed(1) : "0.0";
             const rowData = [timePeriods[period as keyof typeof timePeriods], volume.toString(), `${percentage}%`];
-            
+
             xPos = x;
             rowData.forEach((cell, i) => {
               doc.text(cell, xPos, y);
@@ -628,7 +626,7 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
           // Tabular data for withdrawals by crop
           // Group withdrawals by crop
           const cropData: Record<string, number> = {};
-          
+
           filteredWithdrawals.forEach(item => {
             // Find the inventory item to get the crop
             const inventoryItem = joinedData.find(inv => inv.CODE === item.QR_CODE);
@@ -639,11 +637,11 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
               cropData[inventoryItem.CROP] += Number(item.AMOUNT) || 0;
             }
           });
-          
+
           // Create table
           const headers = ["Crop", "Total Withdrawal Volume", "Percentage"];
           const totalVolume = Object.values(cropData).reduce((sum, volume) => sum + volume, 0);
-          
+
           // Draw table headers
           const colWidths = [50, 60, 40];
           let xPos = x;
@@ -652,14 +650,14 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
             xPos += colWidths[i];
           });
           y += 5;
-          
+
           // Draw table rows
           Object.entries(cropData)
             .sort((a, b) => b[1] - a[1]) // Sort by volume, descending
             .forEach(([crop, volume]) => {
               const percentage = totalVolume > 0 ? ((volume / totalVolume) * 100).toFixed(1) : "0.0";
               const rowData = [crop, volume.toString(), `${percentage}%`];
-              
+
               xPos = x;
               rowData.forEach((cell, i) => {
                 doc.text(cell, xPos, y);
@@ -685,31 +683,31 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
         doc.setFontSize(10)
         doc.text(`Showing ${Math.min(filteredData.length, 50)} of ${filteredData.length} items`, 20, yPosition)
         yPosition += 10
-        
+
         // Table headers
         doc.setFontSize(8)
         doc.setTextColor(100, 100, 100)
-        
+
         const headers = ["Code", "Crop", "Variety", "Seed Class", "Location", "Inventory", "Remaining", "Status"];
         const colWidths = [25, 25, 25, 25, 25, 25, 25, 20];
-        
+
         let xPos = 20;
         headers.forEach((header, i) => {
           doc.text(header, xPos, yPosition);
           xPos += colWidths[i];
         });
         yPosition += 5;
-        
+
         // Table rows - limit to 50 items to avoid excessive pages
         doc.setTextColor(0, 0, 0);
         const itemsToShow = filteredData.slice(0, 50);
-        
+
         itemsToShow.forEach((item, index) => {
           // Add page break if needed
           if (yPosition > 270) {
             doc.addPage();
             yPosition = 20;
-            
+
             // Repeat headers on new page
             doc.setFontSize(8);
             doc.setTextColor(100, 100, 100);
@@ -721,16 +719,16 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
             yPosition += 5;
             doc.setTextColor(0, 0, 0);
           }
-          
+
           // Alternate row colors
           if (index % 2 === 1) {
             doc.setFillColor(240, 240, 240);
             doc.rect(20, yPosition - 3, 195, 4, 'F');
           }
-          
+
           const status = getItemStatus(item);
           const statusColor = status === "Critical" ? "#ff0000" : status === "Low" ? "#ffa500" : "#008000";
-          
+
           const unit = item.INVENTORY === "Planting Materials" ? "pcs" : "g";
           const rowData = [
             item.CODE.substring(0, 10),
@@ -742,7 +740,7 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
             `${item.remainingVolume || item.VOLUME}${unit}`,
             status
           ];
-          
+
           xPos = 20;
           rowData.forEach((cell, i) => {
             // Use color for status column
@@ -758,44 +756,44 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
           });
           yPosition += 4;
         });
-        
+
         // Add withdrawal data table if there are withdrawals
         if (filteredWithdrawals.length > 0) {
           doc.addPage();
           yPosition = 20;
-          
+
           doc.setFontSize(16);
           doc.text("Recent Withdrawals", 20, yPosition);
           yPosition += 15;
-          
+
           doc.setFontSize(10);
           doc.text(`Showing ${Math.min(filteredWithdrawals.length, 50)} of ${filteredWithdrawals.length} withdrawals`, 20, yPosition);
           yPosition += 10;
-          
+
           // Table headers
           doc.setFontSize(8);
           doc.setTextColor(100, 100, 100);
-          
+
           const wHeaders = ["Date", "QR Code", "Amount", "Previous", "New Value", "Reason", "User"];
           const wColWidths = [30, 30, 25, 25, 25, 40, 25];
-          
+
           xPos = 20;
           wHeaders.forEach((header, i) => {
             doc.text(header, xPos, yPosition);
             xPos += wColWidths[i];
           });
           yPosition += 5;
-          
+
           // Table rows - limit to 50 items
           doc.setTextColor(0, 0, 0);
           const withdrawalsToShow = filteredWithdrawals.slice(0, 50);
-          
+
           withdrawalsToShow.forEach((item, index) => {
             // Add page break if needed
             if (yPosition > 270) {
               doc.addPage();
               yPosition = 20;
-              
+
               // Repeat headers on new page
               doc.setFontSize(8);
               doc.setTextColor(100, 100, 100);
@@ -807,17 +805,17 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
               yPosition += 5;
               doc.setTextColor(0, 0, 0);
             }
-            
+
             // Alternate row colors
             if (index % 2 === 1) {
               doc.setFillColor(240, 240, 240);
               doc.rect(20, yPosition - 3, 195, 4, 'F');
             }
-            
+
             // Find the inventory item to determine the unit
             const inventoryItem = joinedData.find(inv => inv.CODE === item.QR_CODE);
             const unit = inventoryItem && inventoryItem.INVENTORY === "Planting Materials" ? "pcs" : "g";
-            
+
             const date = new Date(item.TIMESTAMP).toLocaleDateString();
             const rowData = [
               date,
@@ -828,7 +826,7 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
               (item.REASON || "Not specified").substring(0, 20),
               (item.USER || "Not specified").substring(0, 10)
             ];
-            
+
             xPos = 20;
             rowData.forEach((cell, i) => {
               doc.text(cell, xPos, yPosition);
@@ -838,23 +836,23 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
           });
         }
       }
-      
+
       // Instead, add a table of contents page
       doc.addPage();
       doc.setPage(2); // Move to the first page
-      
+
       // Add table of contents
       let tocY = 20;
       doc.setFontSize(18);
       doc.text("Table of Contents", 20, tocY);
       tocY += 15;
-      
+
       doc.setFontSize(12);
       Object.entries(bookmarks).forEach(([title, { pageNumber }]) => {
         doc.text(`${title} ........................... Page ${pageNumber}`, 20, tocY);
         tocY += 10;
       });
-      
+
       // Move back to the last page to continue
       doc.setPage(doc.getNumberOfPages());
 
@@ -889,15 +887,15 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
     try {
       const html2canvas = (await import("html2canvas")).default
       const chartElement = document.querySelector(`[data-chart-id="${chartId}-export"]`) as HTMLElement
-  
+
       if (!chartElement) {
         console.error(`Chart element with id ${chartId}-export not found`)
         return null
       }
-  
+
       // Wait for chart to fully render
       await new Promise(resolve => setTimeout(resolve, 1500)) // Increased wait time
-  
+
       const canvas = await html2canvas(chartElement, {
         backgroundColor: "#ffffff",
         scale: 2, // REDUCED from 4 to 2 for more reasonable file size
@@ -919,7 +917,7 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
           }
         }
       })
-  
+
       return canvas.toDataURL("image/png", 0.8) // REDUCED quality from 1.0 to 0.8
     } catch (error) {
       console.error(`Error capturing chart ${chartId}:`, error)
@@ -1238,7 +1236,7 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
           <StockByLocationBarChart data={filteredData.filter(item => item.INVENTORY === "Planting Materials")} />
         </div>
 
-        {/* Keep existing charts */}
+
         <div
           data-chart-id="withdrawalByCrop-export"
           style={{
@@ -1256,9 +1254,6 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
           <WithdrawalByCropChart data={filteredData} />
         </div>
 
-        {/* Other existing charts... */}
-        
-        {/* Add the missing releaseLog chart component */}
         <div
           data-chart-id="releaseLog-export"
           style={{
@@ -1290,7 +1285,7 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
                   // Find the inventory item to get crop and variety
                   const inventoryItem = joinedData.find(inv => inv.CODE === item.QR_CODE) || {}
                   const unit = inventoryItem.INVENTORY ? getVolumeUnit(inventoryItem.INVENTORY) : 'g'
-                  
+
                   return (
                     <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                       <td className="border p-2">{new Date(item.TIMESTAMP).toLocaleDateString()}</td>
@@ -1306,40 +1301,40 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
             </table>
           </div>
         </div>
-      {/* Add the missing withdrawalTrend chart */}
-      <div
-        data-chart-id="withdrawalTrend-export"
-        style={{
-          width: cardStyleDimension.WIDTH,
-          height: cardStyleDimension.HEIGHT,
-          padding: '40px',
-          backgroundColor: 'white',
-          border: 'none',
-          boxShadow: 'none',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-      >
-        <WithdrawalTrendLineChart data={filteredWithdrawals} />
-      </div>
-      {/* Add the missing withdrawalAnalysis chart */}
-      <div
-        data-chart-id="withdrawalAnalysis-export"
-        style={{
-          width: cardStyleDimension.WIDTH,
-          height: cardStyleDimension.HEIGHT,
-          padding: '40px',
-          backgroundColor: 'white',
-          border: 'none',
-          boxShadow: 'none',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-      >
-        <WithdrawalAnalysisChart data={filteredWithdrawals} />
-      </div>
+
+        <div
+          data-chart-id="withdrawalTrend-export"
+          style={{
+            width: cardStyleDimension.WIDTH,
+            height: cardStyleDimension.HEIGHT,
+            padding: '40px',
+            backgroundColor: 'white',
+            border: 'none',
+            boxShadow: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <WithdrawalTrendLineChart data={filteredWithdrawals} />
+        </div>
+
+        <div
+          data-chart-id="withdrawalAnalysis-export"
+          style={{
+            width: cardStyleDimension.WIDTH,
+            height: cardStyleDimension.HEIGHT,
+            padding: '40px',
+            backgroundColor: 'white',
+            border: 'none',
+            boxShadow: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <WithdrawalAnalysisChart data={filteredWithdrawals} />
+        </div>
       </div>
     </div>
   )
