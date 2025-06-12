@@ -31,8 +31,8 @@ interface ExportReportingProps {
 }
 
 // Define the dimensions for the canvas
-const cardStyleDimension = { 'WIDTH': '2000px', 'HEIGHT': '1500px' }
-const canvasDimension = { 'WIDTH': 2000, 'HEIGHT': 1500 }
+const cardStyleDimension = { 'WIDTH': '2000px', 'HEIGHT': '500px' }
+const canvasDimension = { 'WIDTH': 2000, 'HEIGHT': 500 }
 
 export default function ExportReporting({ joinedData, withdrawalData, metrics, alerts }: ExportReportingProps) {
   const [dateFrom, setDateFrom] = React.useState("")
@@ -309,21 +309,21 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
       
         // Process charts one per page for maximum visibility
         for (let i = 0; i < selectedChartIds.length; i++) {
-        // Add a new page for each chart (except the first one)
-        if (i > 0) {
-        doc.addPage()
-        }
-        yPosition = 20
+          // Add a new page for each chart (except the first one)
+          if (i > 0) {
+            doc.addPage()
+          }
+          yPosition = 20
       
-        // Calculate dimensions for full-page chart
-        const pageHeight = 297 // A4 height in mm
-        const availableHeight = pageHeight - 40 // Leave margins top and bottom
-        const chartHeight = availableHeight - 30 // Full height minus space for title and description
-        const chartWidth = 190 // Almost full page width
+          // Calculate dimensions for full-page chart
+          const pageHeight = 297 // A4 height in mm
+          const availableHeight = pageHeight - 30 // Reduced top/bottom margins from 40 to 30
+          const chartHeight = availableHeight - 20 // Reduced reserved space from 30 to 20
+          const chartWidth = 190 // Almost full page width
       
-        // Process chart
-        const chartId = selectedChartIds[i]
-        await renderChartToPDF(doc, chartId, 10, yPosition, chartWidth, chartHeight)
+          // Process chart
+          const chartId = selectedChartIds[i]
+          await renderChartToPDF(doc, chartId, 10, yPosition, chartWidth, chartHeight)
         }
       }
 
@@ -340,16 +340,16 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
         doc.setFontSize(14)
         doc.setTextColor(0, 0, 0)
         const chartTitle = getChartTitle(chartId)
-        doc.text(chartTitle, x, y)
+        doc.text(chartTitle, x, y + 10) // Added 10mm to y position to avoid overlap
 
-        const titleHeight = 8
+        const titleHeight = 12 // Increased from 8 to 12 to provide more space
         const chartY = y + titleHeight
 
         // Capture and add chart image
         const chartImage = await captureChart(chartId)
         if (chartImage) {
           // Calculate chart image dimensions (maintain aspect ratio within bounds)
-          const imageHeight = height - titleHeight - 15 // Reserve space for title and description
+          const imageHeight = height - titleHeight - 10 // Reduced from 15 to 10
           const aspectRatio = 4 / 3 // 4:3 aspect ratio
 
           let imgWidth = width
@@ -367,7 +367,7 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
           doc.addImage(chartImage, "PNG", xOffset, chartY, imgWidth, imgHeight)
 
           // Add chart description below the image
-          const descriptionY = chartY + imgHeight + 5
+          const descriptionY = chartY + imgHeight + 5 // 5mm space below the image
           doc.setFontSize(8)
           doc.setTextColor(80, 80, 80) // Gray color for description
 
