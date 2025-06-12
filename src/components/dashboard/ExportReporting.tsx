@@ -30,21 +30,49 @@ interface ExportReportingProps {
   alerts: any[]
 }
 
-// Increase these dimensions for larger chart rendering
-const cardStyleDimension = { 'WIDTH': '1600px', 'HEIGHT': '1200px' }
-const canvasDimension = { 'WIDTH': 1600, 'HEIGHT': 1200 }
+// Define the dimensions for the canvas
+const cardStyleDimension = { 'WIDTH': '2000px', 'HEIGHT': '1500px' }
+const canvasDimension = { 'WIDTH': 2000, 'HEIGHT': 1500 }
 
 export default function ExportReporting({ joinedData, withdrawalData, metrics, alerts }: ExportReportingProps) {
   const [dateFrom, setDateFrom] = React.useState("")
   const [dateTo, setDateTo] = React.useState("")
   const [reportType, setReportType] = React.useState("summary")
+  // Update the selectedCharts state to include releaseLog
   const [selectedCharts, setSelectedCharts] = React.useState({
-    stockBySeedClass: true,
-    stockByLocation: true,
-    withdrawalTrend: true,
-    withdrawalAnalysis: true,
-    withdrawalByCrop: true,
+  stockBySeedClass: true,
+  stockByLocation: true,
+  withdrawalTrend: true,
+  withdrawalAnalysis: true,
+  withdrawalByCrop: true,
+  releaseLog: false, // New option for Release Log data
   })
+  
+  // Update the getChartTitle function
+  const getChartTitle = (chartId: string) => {
+  const titles = {
+  stockBySeedClass: "Stock Distribution by Seed Class",
+  stockByLocation: "Stock Distribution by Location",
+  withdrawalTrend: "Withdrawal Trends Over Time",
+  withdrawalAnalysis: "Withdrawal Time Analysis",
+  withdrawalByCrop: "Withdrawals by Crop Type",
+  releaseLog: "Recent Release Log Data",
+  }
+  return titles[chartId as keyof typeof titles] || chartId
+  }
+  
+  // Update the getChartDescription function
+  const getChartDescription = (chartId: string, inventoryData: any[], withdrawalData: any[]) => {
+  const descriptions = {
+  stockBySeedClass: `This pie chart illustrates the distribution of remaining seed stock across different seed classifications (Foundation, Registered, Certified, etc.). The visualization helps identify which seed classes dominate the inventory and assists in maintaining balanced stock levels. Total items analyzed: ${inventoryData.length}`,
+  stockByLocation: `This bar chart displays seed stock levels across different storage locations within the facility. It enables quick identification of storage capacity utilization and helps optimize inventory distribution. Storage locations tracked: ${availableLocations.length}`,
+  withdrawalTrend: `This line chart tracks seed withdrawal patterns over time, showing monthly trends and seasonal variations. The trend analysis helps predict future seed demand and optimize ordering schedules. Total withdrawal transactions: ${withdrawalData.length}`,
+  withdrawalAnalysis: `This chart analyzes withdrawal patterns by time periods (morning, afternoon, evening), revealing operational patterns and peak usage times. This information helps optimize staff scheduling and resource allocation for inventory management.`,
+  withdrawalByCrop: `This horizontal bar chart shows total withdrawal volumes by crop type, highlighting which crops are in highest demand. This data supports procurement planning and helps prioritize seed varieties for future inventory expansion.`,
+  releaseLog: `This table shows recent release log data, including crop, date, volume, reason, and inventory type. It provides a detailed record of all withdrawals from inventory. Total records shown: ${Math.min(withdrawalData.length, 10)}`,
+  }
+  return descriptions[chartId as keyof typeof descriptions] || ""
+  }
   const [inventoryFilter, setInventoryFilter] = React.useState("all")
   const [locationFilter, setLocationFilter] = React.useState("all")
   const [isExporting, setIsExporting] = React.useState(false)
@@ -107,6 +135,11 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
     }))
   }
 
+  // Helper function to get the appropriate unit based on inventory type
+  const getVolumeUnit = (inventoryType: string): string => {
+    return inventoryType === "Planting Materials" ? "pc" : "g"
+  }
+
   // Generate CSV data
   const generateCSVData = (data: any[], type: "inventory" | "withdrawals") => {
     if (type === "inventory") {
@@ -117,9 +150,9 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
         "Seed Class",
         "Location",
         "Inventory Type",
-        "Original Volume (g)",
-        "Remaining Volume (g)",
-        "Total Withdrawn (g)",
+        "Original Volume",
+        "Remaining Volume",
+        "Total Withdrawn",
         "Stored Date",
         "Harvest Date",
         "Last Modified",
@@ -136,9 +169,9 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
         item.SEED_CLASS,
         item.LOCATION,
         item.INVENTORY,
-        item.VOLUME,
-        item.remainingVolume,
-        item.totalWithdrawn,
+        `${item.VOLUME}${getVolumeUnit(item.INVENTORY)}`,
+        `${item.remainingVolume}${getVolumeUnit(item.INVENTORY)}`,
+        `${item.totalWithdrawn}${getVolumeUnit(item.INVENTORY)}`,
         item.STORED_DATE,
         item.HARVEST_DATE,
         item.LAST_MODIFIED,
@@ -150,17 +183,23 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
 
       return [headers, ...rows]
     } else {
-      const headers = ["Timestamp", "QR Code", "Amount (g)", "Previous Value", "New Value", "Reason", "User"]
+      const headers = ["Timestamp", "QR Code", "Amount", "Previous Value", "New Value", "Reason", "User"]
 
-      const rows = filteredWithdrawals.map((item) => [
-        item.TIMESTAMP,
-        item.QR_CODE,
-        item.AMOUNT,
-        item.PREVIOUS_VALUE,
-        item.NEW_VALUE,
-        item.REASON || "Not specified",
-        item.USER || "Not specified",
-      ])
+      const rows = filteredWithdrawals.map((item) => {
+        // Find the inventory item to determine the unit
+        const inventoryItem = joinedData.find(inv => inv.CODE === item.QR_CODE)
+        const unit = inventoryItem ? getVolumeUnit(inventoryItem.INVENTORY) : "g"
+        
+        return [
+          item.TIMESTAMP,
+          item.QR_CODE,
+          `${item.AMOUNT}${unit}`,
+          `${item.PREVIOUS_VALUE}${unit}`,
+          `${item.NEW_VALUE}${unit}`,
+          item.REASON || "Not specified",
+          item.USER || "Not specified",
+        ]
+      })
 
       return [headers, ...rows]
     }
@@ -268,31 +307,23 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
           .filter(([_, isSelected]) => isSelected)
           .map(([chartId, _]) => chartId)
       
-        // Process charts in pairs (2 per page)
-        for (let i = 0; i < selectedChartIds.length; i += 2) {
-          // If this is not the first pair, add a new page
-          if (i > 0) {
-            doc.addPage()
-            yPosition = 20
-          }
+        // Process charts one per page for maximum visibility
+        for (let i = 0; i < selectedChartIds.length; i++) {
+        // Add a new page for each chart (except the first one)
+        if (i > 0) {
+        doc.addPage()
+        }
+        yPosition = 20
       
-          // Calculate dimensions for 2 charts per page
-          const pageHeight = 297 // A4 height in mm
-          const availableHeight = pageHeight - 40 // Leave margins top and bottom
-          const chartHeight = (availableHeight - 30) / 2 // Divide by 2 charts, minus spacing
-          const chartWidth = 190 // Increased from 170 to use more page width
-          const spacing = 15 // Space between charts
+        // Calculate dimensions for full-page chart
+        const pageHeight = 297 // A4 height in mm
+        const availableHeight = pageHeight - 40 // Leave margins top and bottom
+        const chartHeight = availableHeight - 30 // Full height minus space for title and description
+        const chartWidth = 190 // Almost full page width
       
-          // Process first chart of the pair
-          const firstChartId = selectedChartIds[i]
-          await renderChartToPDF(doc, firstChartId, 10, yPosition, chartWidth, chartHeight) // Adjusted x position to 10
-      
-          // Process second chart of the pair (if exists)
-          if (i + 1 < selectedChartIds.length) {
-            const secondChartId = selectedChartIds[i + 1]
-            const secondChartY = yPosition + chartHeight + spacing
-            await renderChartToPDF(doc, secondChartId, 10, secondChartY, chartWidth, chartHeight) // Adjusted x position to 10
-          }
+        // Process chart
+        const chartId = selectedChartIds[i]
+        await renderChartToPDF(doc, chartId, 10, yPosition, chartWidth, chartHeight)
         }
       }
 
@@ -427,29 +458,6 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
     }
   }
 
-  // Helper functions
-  const getChartTitle = (chartId: string) => {
-    const titles = {
-      stockBySeedClass: "Stock Distribution by Seed Class",
-      stockByLocation: "Stock Distribution by Location",
-      withdrawalTrend: "Withdrawal Trends Over Time",
-      withdrawalAnalysis: "Withdrawal Time Analysis",
-      withdrawalByCrop: "Withdrawals by Crop Type",
-    }
-    return titles[chartId as keyof typeof titles] || chartId
-  }
-
-  const getChartDescription = (chartId: string, inventoryData: any[], withdrawalData: any[]) => {
-    const descriptions = {
-      stockBySeedClass: `This pie chart illustrates the distribution of remaining seed stock across different seed classifications (Foundation, Registered, Certified, etc.). The visualization helps identify which seed classes dominate the inventory and assists in maintaining balanced stock levels. Total items analyzed: ${inventoryData.length}`,
-      stockByLocation: `This bar chart displays seed stock levels across different storage locations within the facility. It enables quick identification of storage capacity utilization and helps optimize inventory distribution. Storage locations tracked: ${availableLocations.length}`,
-      withdrawalTrend: `This line chart tracks seed withdrawal patterns over time, showing monthly trends and seasonal variations. The trend analysis helps predict future seed demand and optimize ordering schedules. Total withdrawal transactions: ${withdrawalData.length}`,
-      withdrawalAnalysis: `This chart analyzes withdrawal patterns by time periods (morning, afternoon, evening), revealing operational patterns and peak usage times. This information helps optimize staff scheduling and resource allocation for inventory management.`,
-      withdrawalByCrop: `This horizontal bar chart shows total withdrawal volumes by crop type, highlighting which crops are in highest demand. This data supports procurement planning and helps prioritize seed varieties for future inventory expansion.`,
-    }
-    return descriptions[chartId as keyof typeof descriptions] || ""
-  }
-
   // Get crop-specific thresholds
   const getCropThresholds = (cropName: string): [number, number] => {
     return CROP_VOLUME_THRESHOLDS[cropName as keyof typeof CROP_VOLUME_THRESHOLDS] || DEFAULT_THRESHOLDS
@@ -470,26 +478,26 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
     try {
       const html2canvas = (await import("html2canvas")).default
       const chartElement = document.querySelector(`[data-chart-id="${chartId}-export"]`) as HTMLElement
-
+  
       if (!chartElement) {
         console.error(`Chart element with id ${chartId}-export not found`)
         return null
       }
-
+  
       // Wait for chart to fully render
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
+      await new Promise(resolve => setTimeout(resolve, 1500)) // Increased wait time
+  
       const canvas = await html2canvas(chartElement, {
         backgroundColor: "#ffffff",
-        scale: 3, // Higher resolution for better PDF quality
+        scale: 2, // REDUCED from 4 to 2 for more reasonable file size
         useCORS: true,
         allowTaint: true,
-        width: canvasDimension.WIDTH, // Match the container width
-        height: canvasDimension.HEIGHT, // Match the container height
+        width: canvasDimension.WIDTH,
+        height: canvasDimension.HEIGHT,
         scrollX: 0,
         scrollY: 0,
         removeContainer: true,
-        logging: false, // Disable logging for cleaner output
+        logging: false,
         onclone: (clonedDoc) => {
           // Ensure charts are visible in the cloned document
           const clonedElement = clonedDoc.querySelector(`[data-chart-id="${chartId}-export"]`) as HTMLElement
@@ -500,8 +508,8 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
           }
         }
       })
-
-      return canvas.toDataURL("image/png", 0.95)
+  
+      return canvas.toDataURL("image/png", 0.8) // REDUCED quality from 1.0 to 0.8
     } catch (error) {
       console.error(`Error capturing chart ${chartId}:`, error)
       return null
