@@ -42,13 +42,13 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
   const [reportType, setReportType] = React.useState("summary")
   // Update the selectedCharts state to include inventory-specific charts
   const [selectedCharts, setSelectedCharts] = React.useState({
-    stockBySeedClass_SeedStorage: true,
-    stockBySeedClass_PlantingMaterials: true,
-    stockByLocation_SeedStorage: true,
-    stockByLocation_PlantingMaterials: true,
-    withdrawalTrend: true,
-    withdrawalAnalysis: true,
-    withdrawalByCrop: true,
+    stockBySeedClass_SeedStorage: false,
+    stockBySeedClass_PlantingMaterials: false,
+    stockByLocation_SeedStorage: false,
+    stockByLocation_PlantingMaterials: false,
+    withdrawalTrend: false,
+    withdrawalAnalysis: false,
+    withdrawalByCrop: false,
     releaseLog: false,
   })
 
@@ -528,37 +528,59 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
           });
         } else if (chartId === "withdrawalTrend") {
           // Tabular data for withdrawal trends
-          // Group withdrawals by month
-          const monthlyData: Record<string, number> = {};
-
+          // Group withdrawals by month and inventory type
+          const monthlyData: Record<string, {seedStorage: number, plantingMaterials: number}> = {};
+          
           filteredWithdrawals.forEach(item => {
             const date = new Date(item.TIMESTAMP);
             const monthYear = `${date.getMonth() + 1}/${date.getFullYear()}`;
-
+            
             if (!monthlyData[monthYear]) {
-              monthlyData[monthYear] = 0;
+              monthlyData[monthYear] = {seedStorage: 0, plantingMaterials: 0};
             }
-            monthlyData[monthYear] += item.AMOUNT;
+            
+            // Find the inventory item to determine the type
+            const inventoryItem = joinedData.find(inv => inv.CODE === item.QR_CODE);
+            if (inventoryItem) {
+              // Convert string to number using parseFloat
+              const amount = parseFloat(item.AMOUNT) || 0;
+              
+              if (inventoryItem.INVENTORY === "Planting Materials") {
+                monthlyData[monthYear].plantingMaterials += amount;
+              } else {
+                monthlyData[monthYear].seedStorage += amount;
+              }
+            }
           });
-
+          
           // Create table
-          const headers = ["Month/Year", "Total Withdrawal", "Percentage"];
-          const totalWithdrawal = Object.values(monthlyData).reduce((sum, amount) => sum + amount, 0);
-
+          const headers = ["Month/Year", "Seed Storage (g)", "Planting Materials (pcs)", "Percentage"];
+          const totalSeedStorage = Object.values(monthlyData).reduce((sum, data) => sum + data.seedStorage, 0);
+          const totalPlantingMaterials = Object.values(monthlyData).reduce((sum, data) => sum + data.plantingMaterials, 0);
+          
           // Draw table headers
-          const colWidths = [50, 50, 40];
+          const colWidths = [40, 40, 50, 40];
           let xPos = x;
           headers.forEach((header, i) => {
             doc.text(header, xPos, y);
             xPos += colWidths[i];
           });
           y += 5;
-
+          
           // Draw table rows
-          Object.entries(monthlyData).forEach(([monthYear, amount]) => {
-            const percentage = totalWithdrawal > 0 ? ((amount / totalWithdrawal) * 100).toFixed(1) : "0.0";
-            const rowData = [monthYear, amount.toString(), `${percentage}%`];
-
+          Object.entries(monthlyData).forEach(([monthYear, data]) => {
+            // Calculate percentage based on total withdrawals (combining both types)
+            const totalForMonth = data.seedStorage + data.plantingMaterials;
+            const totalOverall = totalSeedStorage + totalPlantingMaterials;
+            const percentage = totalOverall > 0 ? ((totalForMonth / totalOverall) * 100).toFixed(1) : "0.0";
+            
+            const rowData = [
+              monthYear, 
+              data.seedStorage.toFixed(1), 
+              data.plantingMaterials.toFixed(0), 
+              `${percentage}%`
+            ];
+            
             xPos = x;
             rowData.forEach((cell, i) => {
               doc.text(cell, xPos, y);
@@ -568,47 +590,71 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
           });
         } else if (chartId === "withdrawalAnalysis") {
           // Tabular data for withdrawal time analysis
-          // Group withdrawals by time of day
-          const timeData = {
-            "Morning (6AM-12PM)": 0,
-            "Afternoon (12PM-6PM)": 0,
-            "Evening (6PM-12AM)": 0,
-            "Night (12AM-6AM)": 0
+          // Group withdrawals by time of day and inventory type
+          const timeData: Record<string, {seedStorage: number, plantingMaterials: number}> = {
+            "Morning (6AM-12PM)": {seedStorage: 0, plantingMaterials: 0},
+            "Afternoon (12PM-6PM)": {seedStorage: 0, plantingMaterials: 0},
+            "Evening (6PM-12AM)": {seedStorage: 0, plantingMaterials: 0},
+            "Night (12AM-6AM)": {seedStorage: 0, plantingMaterials: 0}
           };
-
+          
           filteredWithdrawals.forEach(item => {
             const date = new Date(item.TIMESTAMP);
             const hour = date.getHours();
-
-            if (hour >= 6 && hour < 12) {
-              timeData["Morning (6AM-12PM)"] += item.AMOUNT;
-            } else if (hour >= 12 && hour < 18) {
-              timeData["Afternoon (12PM-6PM)"] += item.AMOUNT;
-            } else if (hour >= 18 && hour < 24) {
-              timeData["Evening (6PM-12AM)"] += item.AMOUNT;
-            } else {
-              timeData["Night (12AM-6AM)"] += item.AMOUNT;
+            
+            // Find the inventory item to determine the type
+            const inventoryItem = joinedData.find(inv => inv.CODE === item.QR_CODE);
+            if (inventoryItem) {
+              // Convert string to number using parseFloat
+              const amount = parseFloat(item.AMOUNT) || 0;
+              
+              let timePeriod = "";
+              if (hour >= 6 && hour < 12) {
+                timePeriod = "Morning (6AM-12PM)";
+              } else if (hour >= 12 && hour < 18) {
+                timePeriod = "Afternoon (12PM-6PM)";
+              } else if (hour >= 18 && hour < 24) {
+                timePeriod = "Evening (6PM-12AM)";
+              } else {
+                timePeriod = "Night (12AM-6AM)";
+              }
+              
+              if (inventoryItem.INVENTORY === "Planting Materials") {
+                timeData[timePeriod].plantingMaterials += amount;
+              } else {
+                timeData[timePeriod].seedStorage += amount;
+              }
             }
           });
-
+          
           // Create table
-          const headers = ["Time Period", "Total Withdrawal", "Percentage"];
-          const totalWithdrawal = Object.values(timeData).reduce((sum, amount) => sum + amount, 0);
-
+          const headers = ["Time Period", "Seed Storage (g)", "Planting Materials (pcs)", "Percentage"];
+          const totalSeedStorage = Object.values(timeData).reduce((sum, data) => sum + data.seedStorage, 0);
+          const totalPlantingMaterials = Object.values(timeData).reduce((sum, data) => sum + data.plantingMaterials, 0);
+          
           // Draw table headers
-          const colWidths = [60, 50, 40];
+          const colWidths = [50, 40, 50, 40];
           let xPos = x;
           headers.forEach((header, i) => {
             doc.text(header, xPos, y);
             xPos += colWidths[i];
           });
           y += 5;
-
+          
           // Draw table rows
-          Object.entries(timeData).forEach(([timePeriod, amount]) => {
-            const percentage = totalWithdrawal > 0 ? ((amount / totalWithdrawal) * 100).toFixed(1) : "0.0";
-            const rowData = [timePeriod, amount.toString(), `${percentage}%`];
-
+          Object.entries(timeData).forEach(([timePeriod, data]) => {
+            // Calculate percentage based on total withdrawals (combining both types)
+            const totalForPeriod = data.seedStorage + data.plantingMaterials;
+            const totalOverall = totalSeedStorage + totalPlantingMaterials;
+            const percentage = totalOverall > 0 ? ((totalForPeriod / totalOverall) * 100).toFixed(1) : "0.0";
+            
+            const rowData = [
+              timePeriod, 
+              data.seedStorage.toFixed(1), 
+              data.plantingMaterials.toFixed(0), 
+              `${percentage}%`
+            ];
+            
             xPos = x;
             rowData.forEach((cell, i) => {
               doc.text(cell, xPos, y);
@@ -618,38 +664,56 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
           });
         } else if (chartId === "withdrawalByCrop") {
           // Tabular data for withdrawals by crop type
-          // Group withdrawals by crop
-          const cropData: Record<string, number> = {};
-
+          // Group withdrawals by crop and inventory type
+          const cropData: Record<string, {seedStorage: number, plantingMaterials: number}> = {};
+          
           filteredWithdrawals.forEach(item => {
             // Find the inventory item to get the crop
             const inventoryItem = joinedData.find(inv => inv.CODE === item.QR_CODE);
             if (inventoryItem && inventoryItem.CROP) {
               if (!cropData[inventoryItem.CROP]) {
-                cropData[inventoryItem.CROP] = 0;
+                cropData[inventoryItem.CROP] = {seedStorage: 0, plantingMaterials: 0};
               }
-              cropData[inventoryItem.CROP] += item.AMOUNT;
+              
+              // Convert string to number using parseFloat
+              const amount = parseFloat(item.AMOUNT) || 0;
+              
+              if (inventoryItem.INVENTORY === "Planting Materials") {
+                cropData[inventoryItem.CROP].plantingMaterials += amount;
+              } else {
+                cropData[inventoryItem.CROP].seedStorage += amount;
+              }
             }
           });
-
+          
           // Create table
-          const headers = ["Crop", "Total Withdrawal", "Percentage"];
-          const totalWithdrawal = Object.values(cropData).reduce((sum, amount) => sum + amount, 0);
-
+          const headers = ["Crop", "Seed Storage (g)", "Planting Materials (pcs)", "Percentage"];
+          const totalSeedStorage = Object.values(cropData).reduce((sum, data) => sum + data.seedStorage, 0);
+          const totalPlantingMaterials = Object.values(cropData).reduce((sum, data) => sum + data.plantingMaterials, 0);
+          
           // Draw table headers
-          const colWidths = [50, 50, 40];
+          const colWidths = [50, 40, 50, 40];
           let xPos = x;
           headers.forEach((header, i) => {
             doc.text(header, xPos, y);
             xPos += colWidths[i];
           });
           y += 5;
-
+          
           // Draw table rows
-          Object.entries(cropData).forEach(([crop, amount]) => {
-            const percentage = totalWithdrawal > 0 ? ((amount / totalWithdrawal) * 100).toFixed(1) : "0.0";
-            const rowData = [crop, amount.toString(), `${percentage}%`];
-
+          Object.entries(cropData).forEach(([crop, data]) => {
+            // Calculate percentage based on total withdrawals (combining both types)
+            const totalForCrop = data.seedStorage + data.plantingMaterials;
+            const totalOverall = totalSeedStorage + totalPlantingMaterials;
+            const percentage = totalOverall > 0 ? ((totalForCrop / totalOverall) * 100).toFixed(1) : "0.0";
+            
+            const rowData = [
+              crop, 
+              data.seedStorage.toFixed(1), 
+              data.plantingMaterials.toFixed(0), 
+              `${percentage}%`
+            ];
+            
             xPos = x;
             rowData.forEach((cell, i) => {
               doc.text(cell, xPos, y);
