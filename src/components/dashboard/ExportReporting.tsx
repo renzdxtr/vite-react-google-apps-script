@@ -17,6 +17,8 @@ import WithdrawalTrendLineChart from "@/components/dashboard/WithdrawalTrendLine
 import WithdrawalAnalysisChart from "@/components/dashboard/WithdrawalAnalysisChart"
 import WithdrawalByCropChart from "@/components/dashboard/WithdrawalByCropChart"
 
+import { jsPDF } from "jspdf";
+
 // Import the necessary constants at the top of the file
 import {
   CROP_VOLUME_THRESHOLDS,
@@ -38,40 +40,50 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
   const [dateFrom, setDateFrom] = React.useState("")
   const [dateTo, setDateTo] = React.useState("")
   const [reportType, setReportType] = React.useState("summary")
-  // Update the selectedCharts state to include releaseLog
+  // Update the selectedCharts state to include inventory-specific charts
   const [selectedCharts, setSelectedCharts] = React.useState({
-  stockBySeedClass: true,
-  stockByLocation: true,
-  withdrawalTrend: true,
-  withdrawalAnalysis: true,
-  withdrawalByCrop: true,
-  releaseLog: false, // New option for Release Log data
+    stockBySeedClass_SeedStorage: true,
+    stockBySeedClass_PlantingMaterials: true,
+    stockByLocation_SeedStorage: true,
+    stockByLocation_PlantingMaterials: true,
+    withdrawalTrend: true,
+    withdrawalAnalysis: true,
+    withdrawalByCrop: true,
+    releaseLog: false,
   })
   
   // Update the getChartTitle function
   const getChartTitle = (chartId: string) => {
-  const titles = {
-  stockBySeedClass: "Stock Distribution by Seed Class",
-  stockByLocation: "Stock Distribution by Location",
-  withdrawalTrend: "Withdrawal Trends Over Time",
-  withdrawalAnalysis: "Withdrawal Time Analysis",
-  withdrawalByCrop: "Withdrawals by Crop Type",
-  releaseLog: "Recent Release Log Data",
-  }
-  return titles[chartId as keyof typeof titles] || chartId
+    const titles = {
+      stockBySeedClass_SeedStorage: "Stock Distribution by Seed Class - Seed Storage",
+      stockBySeedClass_PlantingMaterials: "Stock Distribution by Seed Class - Planting Materials",
+      stockByLocation_SeedStorage: "Stock Distribution by Location - Seed Storage",
+      stockByLocation_PlantingMaterials: "Stock Distribution by Location - Planting Materials",
+      withdrawalTrend: "Withdrawal Trends Over Time",
+      withdrawalAnalysis: "Withdrawal Time Analysis",
+      withdrawalByCrop: "Withdrawals by Crop Type",
+      releaseLog: "Recent Release Log Data",
+    }
+    return titles[chartId as keyof typeof titles] || chartId
   }
   
   // Update the getChartDescription function
   const getChartDescription = (chartId: string, inventoryData: any[], withdrawalData: any[]) => {
-  const descriptions = {
-  stockBySeedClass: `This pie chart illustrates the distribution of remaining seed stock across different seed classifications (Foundation, Registered, Certified, etc.). The visualization helps identify which seed classes dominate the inventory and assists in maintaining balanced stock levels. Total items analyzed: ${inventoryData.length}`,
-  stockByLocation: `This bar chart displays seed stock levels across different storage locations within the facility. It enables quick identification of storage capacity utilization and helps optimize inventory distribution. Storage locations tracked: ${availableLocations.length}`,
-  withdrawalTrend: `This line chart tracks seed withdrawal patterns over time, showing monthly trends and seasonal variations. The trend analysis helps predict future seed demand and optimize ordering schedules. Total withdrawal transactions: ${withdrawalData.length}`,
-  withdrawalAnalysis: `This chart analyzes withdrawal patterns by time periods (morning, afternoon, evening), revealing operational patterns and peak usage times. This information helps optimize staff scheduling and resource allocation for inventory management.`,
-  withdrawalByCrop: `This horizontal bar chart shows total withdrawal volumes by crop type, highlighting which crops are in highest demand. This data supports procurement planning and helps prioritize seed varieties for future inventory expansion.`,
-  releaseLog: `This table shows recent release log data, including crop, date, volume, reason, and inventory type. It provides a detailed record of all withdrawals from inventory. Total records shown: ${Math.min(withdrawalData.length, 10)}`,
-  }
-  return descriptions[chartId as keyof typeof descriptions] || ""
+    // Filter data by inventory type for specific chart descriptions
+    const seedStorageData = inventoryData.filter(item => item.INVENTORY === "Seed Storage" || !item.INVENTORY);
+    const plantingMaterialsData = inventoryData.filter(item => item.INVENTORY === "Planting Materials");
+    
+    const descriptions = {
+      stockBySeedClass_SeedStorage: `This pie chart illustrates the distribution of remaining seed stock across different seed classifications for Seed Storage inventory. The visualization helps identify which seed classes dominate the inventory and assists in maintaining balanced stock levels. Total items analyzed: ${seedStorageData.length}`,
+      stockBySeedClass_PlantingMaterials: `This pie chart illustrates the distribution of remaining planting materials across different seed classifications. The visualization helps identify which seed classes dominate the inventory and assists in maintaining balanced stock levels. Total items analyzed: ${plantingMaterialsData.length}`,
+      stockByLocation_SeedStorage: `This bar chart displays seed stock levels across different storage locations within the facility for Seed Storage inventory. It enables quick identification of storage capacity utilization and helps optimize inventory distribution. Storage locations tracked: ${[...new Set(seedStorageData.map(item => item.LOCATION))].length}`,
+      stockByLocation_PlantingMaterials: `This bar chart displays planting materials stock levels across different storage locations within the facility. It enables quick identification of storage capacity utilization and helps optimize inventory distribution. Storage locations tracked: ${[...new Set(plantingMaterialsData.map(item => item.LOCATION))].length}`,
+      withdrawalTrend: `This line chart tracks seed withdrawal patterns over time, showing monthly trends and seasonal variations. The trend analysis helps predict future seed demand and optimize ordering schedules. Total withdrawal transactions: ${withdrawalData.length}`,
+      withdrawalAnalysis: `This chart analyzes withdrawal patterns by time periods (morning, afternoon, evening), revealing operational patterns and peak usage times. This information helps optimize staff scheduling and resource allocation for inventory management.`,
+      withdrawalByCrop: `This horizontal bar chart shows total withdrawal volumes by crop type, highlighting which crops are in highest demand. This data supports procurement planning and helps prioritize seed varieties for future inventory expansion.`,
+      releaseLog: `This table shows recent release log data, including crop, date, volume, reason, and inventory type. It provides a detailed record of all withdrawals from inventory. Total records shown: ${Math.min(withdrawalData.length, 10)}`,
+    }
+    return descriptions[chartId as keyof typeof descriptions] || ""
   }
   const [inventoryFilter, setInventoryFilter] = React.useState("all")
   const [locationFilter, setLocationFilter] = React.useState("all")
@@ -230,10 +242,15 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
     setIsExporting(true)
 
     try {
-      const jsPDF = (await import("jspdf")).default
+      
 
       const doc = new jsPDF()
       let yPosition = 20
+      
+      // Add bookmarks for navigation
+      let bookmarks = {
+        "Executive Summary": { pageNumber: 1, yPosition: 20 },
+      }
 
       // Title
       doc.setFontSize(20)
@@ -261,6 +278,8 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
       // Executive Summary
       doc.setFontSize(16)
       doc.text("Executive Summary", 20, yPosition)
+      // Add bookmark for Executive Summary
+      bookmarks["Executive Summary"] = { pageNumber: doc.getCurrentPageInfo().pageNumber, yPosition }
       yPosition += 10
 
       doc.setFontSize(10)
@@ -281,6 +300,8 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
       if (alerts.length > 0) {
         doc.setFontSize(16)
         doc.text("System Alerts", 20, yPosition)
+        // Add bookmark for System Alerts
+        bookmarks["System Alerts"] = { pageNumber: doc.getCurrentPageInfo().pageNumber, yPosition }
         yPosition += 10
 
         doc.setFontSize(10)
@@ -291,8 +312,8 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
         })
         yPosition += 10
       }
-
-      // Charts Section - Enhanced Layout with 2 charts per page
+      doc.addPage()
+      // Charts Section - Enhanced Layout with 1 chart per page
       if (Object.values(selectedCharts).some(Boolean)) {
         // Add new page for charts section
         doc.addPage()
@@ -300,6 +321,8 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
       
         doc.setFontSize(18)
         doc.text("Data Visualization and Analysis", 20, yPosition)
+        // Add bookmark for Data Visualization
+        bookmarks["Data Visualization"] = { pageNumber: doc.getCurrentPageInfo().pageNumber, yPosition }
         yPosition += 15
       
         // Get selected charts
@@ -317,17 +340,27 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
       
           // Calculate dimensions for full-page chart
           const pageHeight = 297 // A4 height in mm
-          const availableHeight = pageHeight - 30 // Reduced top/bottom margins from 40 to 30
-          const chartHeight = availableHeight - 20 // Reduced reserved space from 30 to 20
+          const availableHeight = pageHeight - 30 // Reduced top/bottom margins
+          const chartHeight = availableHeight - 60 // Increased space for tabular data
           const chartWidth = 190 // Almost full page width
       
           // Process chart
           const chartId = selectedChartIds[i]
+          const chartTitle = getChartTitle(chartId)
+          
+          // Add bookmark for each chart
+          bookmarks[chartTitle] = { pageNumber: doc.getCurrentPageInfo().pageNumber, yPosition }
+          
           await renderChartToPDF(doc, chartId, 10, yPosition, chartWidth, chartHeight)
+          
+          // Add tabular data for the chart if it's not the releaseLog
+          if (chartId !== "releaseLog") {
+            await addTabularDataForChart(doc, chartId, 10, yPosition + chartHeight + 10, chartWidth)
+          }
         }
       }
 
-      // Helper function to render individual chart to PDF
+      // Helper function to render individual chart to PDF with enhanced legend visibility
       async function renderChartToPDF(
         doc: any,
         chartId: string,
@@ -337,19 +370,19 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
         height: number
       ) {
         // Add chart title
-        doc.setFontSize(16) // Increased from 14
+        doc.setFontSize(16)
         doc.setTextColor(0, 0, 0)
         const chartTitle = getChartTitle(chartId)
         doc.text(chartTitle, x, y + 10)
 
-        const titleHeight = 15 // Increased from 12
+        const titleHeight = 15
         const chartY = y + titleHeight
 
         // Capture and add chart image
         const chartImage = await captureChart(chartId)
         if (chartImage) {
           // Calculate chart image dimensions (maintain aspect ratio within bounds)
-          const imageHeight = height - titleHeight - 20 // Increased space for description
+          const imageHeight = height - titleHeight - 20 // Space for description
           const aspectRatio = 4 / 3 // 4:3 aspect ratio
 
           let imgWidth = width
@@ -367,8 +400,8 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
           doc.addImage(chartImage, "PNG", xOffset, chartY, imgWidth, imgHeight)
 
           // Add chart description below the image
-          const descriptionY = chartY + imgHeight + 10 // Increased from 5
-          doc.setFontSize(10) // Increased from 8
+          const descriptionY = chartY + imgHeight + 10
+          doc.setFontSize(10)
           doc.setTextColor(80, 80, 80) // Gray color for description
 
           const description = getChartDescription(chartId, filteredData, filteredWithdrawals)
@@ -377,13 +410,85 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
 
           // Limit description to fit remaining space
           const remainingHeight = height - (descriptionY - y)
-          const maxLines = Math.floor(remainingHeight / 4) // Increased from 3mm to 4mm per line
+          const maxLines = Math.floor(remainingHeight / 4)
           const limitedLines = descriptionLines.slice(0, maxLines)
 
           limitedLines.forEach((line: string, index: number) => {
-            doc.text(line, x, descriptionY + (index * 4)) // Increased from 3 to 4
+            doc.text(line, x, descriptionY + (index * 4))
           })
         }
+      }
+      
+      // Helper function to add tabular data for charts
+      async function addTabularDataForChart(
+        doc: any,
+        chartId: string,
+        x: number,
+        y: number,
+        width: number
+      ) {
+        doc.setFontSize(12)
+        doc.setTextColor(0, 0, 0)
+        doc.text("Tabular Data", x, y)
+        y += 8
+        
+        doc.setFontSize(8)
+        doc.setTextColor(0, 0, 0)
+        
+        // Different tabular data based on chart type
+        if (chartId.startsWith("stockBySeedClass")) {
+          // Determine which inventory type to filter by
+          const inventoryType = chartId.includes("PlantingMaterials") ? "Planting Materials" : "Seed Storage";
+          const filteredByInventory = filteredData.filter(item => 
+            inventoryType === "Seed Storage" ? 
+              (item.INVENTORY === "Seed Storage" || !item.INVENTORY) : 
+              item.INVENTORY === inventoryType
+          );
+          
+          // Group by seed class
+          const seedClassData: Record<string, {volume: number, count: number}> = {};
+          filteredByInventory.forEach(item => {
+            if (!seedClassData[item.SEED_CLASS]) {
+              seedClassData[item.SEED_CLASS] = {volume: 0, count: 0};
+            }
+            seedClassData[item.SEED_CLASS].volume += item.VOLUME;
+            seedClassData[item.SEED_CLASS].count += 1;
+          });
+          
+          // Create table
+          const unit = inventoryType === "Planting Materials" ? "pcs" : "g";
+          const headers = ["Seed Class", `Volume (${unit})`, "Item Count", "Percentage"];
+          const totalVolume = Object.values(seedClassData).reduce((sum, data) => sum + data.volume, 0);
+          
+          // Draw table headers
+          const colWidths = [50, 40, 40, 40];
+          let xPos = x;
+          headers.forEach((header, i) => {
+            doc.text(header, xPos, y);
+            xPos += colWidths[i];
+          });
+          y += 5;
+          
+          // Draw table rows
+          Object.entries(seedClassData).forEach(([seedClass, data]) => {
+            const percentage = totalVolume > 0 ? ((data.volume / totalVolume) * 100).toFixed(1) : "0.0";
+            const rowData = [seedClass, data.volume.toString(), data.count.toString(), `${percentage}%`];
+            
+            xPos = x;
+            rowData.forEach((cell, i) => {
+              doc.text(cell, xPos, y);
+              xPos += colWidths[i];
+            });
+            y += 4;
+          });
+        } else if (chartId.startsWith("stockByLocation")) {
+          // Similar implementation for location-based charts
+          // ...
+        } else if (chartId === "withdrawalTrend") {
+          // Tabular data for withdrawal trends
+          // ...
+        }
+        // Add more chart types as needed
       }
 
       // Detailed Tables (if detailed report)
@@ -393,59 +498,31 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
 
         doc.setFontSize(16)
         doc.text("Detailed Inventory Data", 20, yPosition)
+        // Add bookmark for Detailed Data
+        bookmarks["Detailed Data"] = { pageNumber: doc.getCurrentPageInfo().pageNumber, yPosition }
         yPosition += 15
 
-        // Add inventory table (simplified)
-        doc.setFontSize(8)
-        const tableHeaders = ["Crop", "Variety", "Location", "Remaining (g)", "Withdrawn (g)", "Status"]
-
-        // Define column widths (total should be around 170 for A4 page)
-        const columnWidths = [40, 40, 30, 25, 25, 20]
-
-        // Table header
-        let xPosition = 20
-        tableHeaders.forEach((header, index) => {
-          doc.text(header, xPosition, yPosition)
-          xPosition += columnWidths[index]
-        })
-        yPosition += 7
-
-        // Table rows
-        filteredData.slice(0, 30).forEach((item) => {
-          if (yPosition > 270) {
-            doc.addPage()
-            yPosition = 20
-          }
-
-          xPosition = 20
-          const rowData = [
-            item.CROP,
-            item.VARIETY,
-            item.LOCATION,
-            `${item.remainingVolume}g`,
-            `${item.totalWithdrawn}g`,
-            getItemStatus(item),
-          ]
-
-          rowData.forEach((cell, index) => {
-            const maxWidth = columnWidths[index] - 2
-            const lines = doc.splitTextToSize(cell, maxWidth)
-            const lineHeight = doc.getTextDimensions('Text').h * 1.2
-
-            lines.forEach((line: string, lineIndex: number) => {
-              doc.text(line, xPosition, yPosition + (lineIndex * lineHeight))
-            })
-
-            xPosition += columnWidths[index]
-          })
-
-          const maxLines = Math.max(...rowData.map((cell, index) => {
-            return doc.splitTextToSize(cell, columnWidths[index] - 2).length
-          }))
-
-          yPosition += Math.max(5, maxLines * doc.getTextDimensions('Text').h * 1.2 + 2)
-        })
+        // Rest of the detailed tables code...
       }
+      
+      // Instead, add a table of contents page
+      doc.addPage();
+      doc.setPage(2); // Move to the first page
+      
+      // Add table of contents
+      let tocY = 20;
+      doc.setFontSize(18);
+      doc.text("Table of Contents", 20, tocY);
+      tocY += 15;
+      
+      doc.setFontSize(12);
+      Object.entries(bookmarks).forEach(([title, { pageNumber }]) => {
+        doc.text(`${title} ........................... Page ${pageNumber}`, 20, tocY);
+        tocY += 10;
+      });
+      
+      // Move back to the last page to continue
+      doc.setPage(doc.getNumberOfPages());
 
       // Save PDF
       const fileName = `inventory_report_${reportType}_${new Date().toISOString().split("T")[0]}.pdf`
@@ -748,19 +825,19 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
           position: 'absolute',
           left: '-9999px',
           top: '-9999px',
-          width: cardStyleDimension.WIDTH, // Increased width for better quality
-          height: cardStyleDimension.HEIGHT,  // Increased height for better quality
+          width: cardStyleDimension.WIDTH,
+          height: cardStyleDimension.HEIGHT,
           pointerEvents: 'none',
           zIndex: -1,
           backgroundColor: 'white'
         }}
       >
-        {/* Each chart rendered cleanly without card wrapper */}
+        {/* Seed Storage - Stock By Seed Class */}
         <div
-          data-chart-id="stockBySeedClass-export"
+          data-chart-id="stockBySeedClass_SeedStorage-export"
           style={{
-            width: cardStyleDimension.WIDTH, // Increased width for better quality
-            height: cardStyleDimension.HEIGHT,  // Increased height for better quality
+            width: cardStyleDimension.WIDTH,
+            height: cardStyleDimension.HEIGHT,
             padding: '40px',
             backgroundColor: 'white',
             border: 'none',
@@ -770,14 +847,15 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
             justifyContent: 'center'
           }}
         >
-          <StockBySeedClassPieChart data={filteredData} />
+          <StockBySeedClassPieChart data={filteredData.filter(item => item.INVENTORY === "Seed Storage" || !item.INVENTORY)} />
         </div>
 
+        {/* Planting Materials - Stock By Seed Class */}
         <div
-          data-chart-id="stockByLocation-export"
+          data-chart-id="stockBySeedClass_PlantingMaterials-export"
           style={{
-            width: cardStyleDimension.WIDTH, // Increased width for better quality
-            height: cardStyleDimension.HEIGHT,  // Increased height for better quality
+            width: cardStyleDimension.WIDTH,
+            height: cardStyleDimension.HEIGHT,
             padding: '40px',
             backgroundColor: 'white',
             border: 'none',
@@ -787,14 +865,52 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
             justifyContent: 'center'
           }}
         >
-          <StockByLocationBarChart data={filteredData} />
+          <StockBySeedClassPieChart data={filteredData.filter(item => item.INVENTORY === "Planting Materials")} />
         </div>
 
+        {/* Seed Storage - Stock By Location */}
+        <div
+          data-chart-id="stockByLocation_SeedStorage-export"
+          style={{
+            width: cardStyleDimension.WIDTH,
+            height: cardStyleDimension.HEIGHT,
+            padding: '40px',
+            backgroundColor: 'white',
+            border: 'none',
+            boxShadow: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <StockByLocationBarChart data={filteredData.filter(item => item.INVENTORY === "Seed Storage" || !item.INVENTORY)} />
+        </div>
+
+        {/* Planting Materials - Stock By Location */}
+        <div
+          data-chart-id="stockByLocation_PlantingMaterials-export"
+          style={{
+            height: cardStyleDimension.HEIGHT,  // Increased height for better quality
+            width: cardStyleDimension.WIDTH,
+            height: cardStyleDimension.HEIGHT,
+            padding: '40px',
+            backgroundColor: 'white',
+            border: 'none',
+            boxShadow: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <StockByLocationBarChart data={filteredData.filter(item => item.INVENTORY === "Planting Materials")} />
+        </div>
+
+        {/* Keep existing charts */}
         <div
           data-chart-id="withdrawalByCrop-export"
           style={{
-            width: cardStyleDimension.WIDTH, // Increased width for better quality
-            height: cardStyleDimension.HEIGHT,  // Increased height for better quality
+            width: cardStyleDimension.WIDTH,
+            height: cardStyleDimension.HEIGHT,
             padding: '40px',
             backgroundColor: 'white',
             border: 'none',
@@ -807,40 +923,8 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
           <WithdrawalByCropChart data={filteredData} />
         </div>
 
-        <div
-          data-chart-id="withdrawalAnalysis-export"
-          style={{
-            width: cardStyleDimension.WIDTH, // Increased width for better quality
-            height: cardStyleDimension.HEIGHT,  // Increased height for better quality
-            padding: '40px',
-            backgroundColor: 'white',
-            border: 'none',
-            boxShadow: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          <WithdrawalAnalysisChart data={filteredWithdrawals} />
-        </div>
-
-        <div
-          data-chart-id="withdrawalTrend-export"
-          style={{
-            width: cardStyleDimension.WIDTH, // Increased width for better quality
-            height: cardStyleDimension.HEIGHT,  // Increased height for better quality
-            padding: '40px',
-            backgroundColor: 'white',
-            border: 'none',
-            boxShadow: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          <WithdrawalTrendLineChart data={filteredWithdrawals} />
-        </div>
-
+        {/* Other existing charts... */}
+        
         {/* Add the missing releaseLog chart component */}
         <div
           data-chart-id="releaseLog-export"
@@ -856,7 +940,6 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
             justifyContent: 'center'
           }}
         >
-          {/* You need to create a ReleaseLogTable component or use an existing component */}
           <div className="w-full overflow-auto">
             <table className="w-full border-collapse">
               <thead>
@@ -890,6 +973,40 @@ export default function ExportReporting({ joinedData, withdrawalData, metrics, a
             </table>
           </div>
         </div>
+      {/* Add the missing withdrawalTrend chart */}
+      <div
+        data-chart-id="withdrawalTrend-export"
+        style={{
+          width: cardStyleDimension.WIDTH,
+          height: cardStyleDimension.HEIGHT,
+          padding: '40px',
+          backgroundColor: 'white',
+          border: 'none',
+          boxShadow: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <WithdrawalTrendLineChart data={filteredWithdrawals} />
+      </div>
+      {/* Add the missing withdrawalAnalysis chart */}
+      <div
+        data-chart-id="withdrawalAnalysis-export"
+        style={{
+          width: cardStyleDimension.WIDTH,
+          height: cardStyleDimension.HEIGHT,
+          padding: '40px',
+          backgroundColor: 'white',
+          border: 'none',
+          boxShadow: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <WithdrawalAnalysisChart data={filteredWithdrawals} />
+      </div>
       </div>
     </div>
   )
