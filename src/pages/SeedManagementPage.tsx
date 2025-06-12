@@ -108,6 +108,8 @@ export const SeedManagementContent: React.FC = () => {
   const [pinError, setPinError] = useState<string | null>(null);
   const [pinAttempts, setPinAttempts] = useState<number>(0);
 
+  const [userName, setUserName] = useState<string>('');
+
   //
   // ─── VALIDATE & HANDLE WITHDRAWAL ───────────────────────────────────────────
   //
@@ -137,37 +139,44 @@ export const SeedManagementContent: React.FC = () => {
     }
   };
 
-  const handleConfirmWithdraw = async () => {
-    setIsWithdrawing(true);
-    setWithdrawalError(null);
+  // Update the handleConfirmWithdraw function to capture the user's name
+const handleConfirmWithdraw = async () => {
+  setIsWithdrawing(true);
+  setWithdrawalError(null);
 
-    try {
-      if (qrCode) {
-        const result = await updateSeedVolume({
-          qrCode,
-          withdrawalAmount: withdrawAmount as number,
-          withdrawalReason: withdrawReason,
-        });
-        if (result.success) {
-          setWithdrawalSuccess(`Successfully withdrew ${withdrawAmount} units.`);
-          setWithdrawAmount('');
-          setWithdrawReason('');
-          setIsConfirming(false);
-          // Refetch both seed details and withdrawal history
-          await Promise.all([
-            refetch(),
-            refetchWithdrawals()
-          ]);
-        } else {
-          setWithdrawalError(result.message || 'Failed to withdraw seed volume.');
+  try {
+    if (qrCode) {
+      const result = await updateSeedVolume({
+        qrCode,
+        withdrawalAmount: withdrawAmount as number,
+        withdrawalReason: withdrawReason,
+      });
+      if (result.success) {
+        // Store the user's name if available
+        if (result.data?.userName) {
+          setUserName(result.data.userName);
         }
+        
+        // Update the withdrawal success message
+        setWithdrawalSuccess(`Successfully withdrew ${withdrawAmount} units${userName ? ` by ${userName}` : ''}.`);
+        setWithdrawAmount('');
+        setWithdrawReason('');
+        setIsConfirming(false);
+        // Refetch both seed details and withdrawal history
+        await Promise.all([
+          refetch(),
+          refetchWithdrawals()
+        ]);
+      } else {
+        setWithdrawalError(result.message || 'Failed to withdraw seed volume.');
       }
-    } catch (err: any) {
-      setWithdrawalError(err.message || 'An unexpected error occurred during withdrawal.');
-    } finally {
-      setIsWithdrawing(false);
     }
-  };
+  } catch (err: any) {
+    setWithdrawalError(err.message || 'An unexpected error occurred during withdrawal.');
+  } finally {
+    setIsWithdrawing(false);
+  }
+};
 
   // Add this function to your component
   // ...
@@ -258,86 +267,93 @@ export const SeedManagementContent: React.FC = () => {
     setHasUnsavedChanges(true);
   };
 
-  const handleSaveEdit = async () => {
-    const errors: Record<string, string> = {};
+  // Update the handleSaveEdit function to capture the user's name
+const handleSaveEdit = async () => {
+  const errors: Record<string, string> = {};
 
-    // 1) Validate edited fields
-    Object.keys(editedDetails).forEach((key) => {
-      const errMsg = validateField(key, editedDetails[key]);
-      if (errMsg) errors[key] = errMsg;
-    });
+  // 1) Validate edited fields
+  Object.keys(editedDetails).forEach((key) => {
+    const errMsg = validateField(key, editedDetails[key]);
+    if (errMsg) errors[key] = errMsg;
+  });
 
-    // 2) Validate required original fields that weren't edited
-    if (seedDetails) {
-      Object.keys(seedDetails).forEach((key) => {
-        if (
-          !NON_REQUIRED_FIELDS.includes(key) &&
-          !urlFields.includes(key) &&
-          !(key in editedDetails)
-        ) {
-          const rawValue = (seedDetails as SeedDetailsType)[key];
-          const errMsg = validateField(key, rawValue);
-          if (errMsg) errors[key] = errMsg;
-        }
-      });
-    }
-
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors);
-      return;
-    }
-
-    // Create a copy of editedDetails to ensure we don't modify the original state
-    const processedDetails = { ...editedDetails };
-    
-    // Process date fields to ensure they're in MM/DD/YYYY format without time component
-    Object.keys(processedDetails).forEach(key => {
-      if (DATE_FIELDS.includes(key) && processedDetails[key]) {
-        // If the date already has the correct format, keep it as is
-        const dateRegex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$/;
-        if (!dateRegex.test(processedDetails[key])) {
-          // Try to extract just the date part if it contains time
-          const dateObj = new Date(processedDetails[key]);
-          if (!isNaN(dateObj.getTime())) {
-            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const day = String(dateObj.getDate()).padStart(2, '0');
-            const year = dateObj.getFullYear();
-            processedDetails[key] = `${month}/${day}/${year}`;
-          }
-        }
+  // 2) Validate required original fields that weren't edited
+  if (seedDetails) {
+    Object.keys(seedDetails).forEach((key) => {
+      if (
+        !NON_REQUIRED_FIELDS.includes(key) &&
+        !urlFields.includes(key) &&
+        !(key in editedDetails)
+      ) {
+        const rawValue = (seedDetails as SeedDetailsType)[key];
+        const errMsg = validateField(key, rawValue);
+        if (errMsg) errors[key] = errMsg;
       }
     });
-    
-    // Debug what's being sent to the server
-    console.log('Edited details before sending:', processedDetails);
-    if (processedDetails.VOLUME) {
-      console.log('VOLUME type:', typeof processedDetails.VOLUME, 'Value:', processedDetails.VOLUME);
-    }
+  }
 
-    // 3) Call updateSeedDetails
-    try {
-      const response = await updateSeedDetails({
-        qrCode: (seedDetails as SeedDetailsType)?.CODE,
-        oldData: seedDetails as SeedDetailsType,
-        newData: processedDetails,
-        pinCode: verifiedPin // Add the PIN code to the request
-      });
+  if (Object.keys(errors).length > 0) {
+    setFieldErrors(errors);
+    return;
+  }
 
-      if (response.success) {
-        setIsEditing(false);
-        setEditedDetails({});
-        setFieldErrors({});
-        setHasUnsavedChanges(false);
-        setVerifiedPin(''); // Reset the verified PIN
-        await refetch();
-        setEditSuccess('Details updated successfully');
-      } else {
-        setFieldErrors({ _global: response.message || 'Failed to update details' });
+  // Create a copy of editedDetails to ensure we don't modify the original state
+  const processedDetails = { ...editedDetails };
+  
+  // Process date fields to ensure they're in MM/DD/YYYY format without time component
+  Object.keys(processedDetails).forEach(key => {
+    if (DATE_FIELDS.includes(key) && processedDetails[key]) {
+      // If the date already has the correct format, keep it as is
+      const dateRegex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$/;
+      if (!dateRegex.test(processedDetails[key])) {
+        // Try to extract just the date part if it contains time
+        const dateObj = new Date(processedDetails[key]);
+        if (!isNaN(dateObj.getTime())) {
+          const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+          const day = String(dateObj.getDate()).padStart(2, '0');
+          const year = dateObj.getFullYear();
+          processedDetails[key] = `${month}/${day}/${year}`;
+        }
       }
-    } catch (err: any) {
-      setFieldErrors({ _global: err.message || 'Error updating details' });
     }
-  };
+  });
+  
+  // Debug what's being sent to the server
+  console.log('Edited details before sending:', processedDetails);
+  if (processedDetails.VOLUME) {
+    console.log('VOLUME type:', typeof processedDetails.VOLUME, 'Value:', processedDetails.VOLUME);
+  }
+
+  // 3) Call updateSeedDetails
+  try {
+    const response = await updateSeedDetails({
+      qrCode: (seedDetails as SeedDetailsType)?.CODE,
+      oldData: seedDetails as SeedDetailsType,
+      newData: processedDetails,
+      pinCode: verifiedPin // Add the PIN code to the request
+    });
+
+    if (response.success) {
+      // Store the user's name if available
+      if (response.data?.userName) {
+        setUserName(response.data.userName);
+      }
+      
+      setIsEditing(false);
+      setEditedDetails({});
+      setFieldErrors({});
+      setHasUnsavedChanges(false);
+      setVerifiedPin(''); // Reset the verified PIN
+      await refetch();
+      // Update the edit success message
+      setEditSuccess(`Details updated successfully${userName ? ` by ${userName}` : ''}`);
+    } else {
+      setFieldErrors({ _global: response.message || 'Failed to update details' });
+    }
+  } catch (err: any) {
+    setFieldErrors({ _global: err.message || 'Error updating details' });
+  }
+};
 
   // Helper function to format dates consistently
   const formatDate = (dateValue: any): string => {

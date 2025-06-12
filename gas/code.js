@@ -283,6 +283,9 @@ function updateSeedVolume(data) {
     const now = new Date();
     const timestamp = Utilities.formatDate(now, Session.getScriptTimeZone(), "M/d/yyyy HH:mm:ss");
     
+    // Get the current user's name
+    const userName = Session.getActiveUser().getUsername();
+    
     // Update volume and last modified date
     formSheet.getRange(rowIndex, volumeCol + 1).setValue(newVolume);
     formSheet.getRange(rowIndex, lastModifiedCol + 1).setValue(timestamp);
@@ -296,7 +299,7 @@ function updateSeedVolume(data) {
       currentVolume,      // Previous Value
       newVolume,          // New Value
       withdrawalReason,   // Reason
-      ""                  // User
+      userName            // User - now populated with the active user's name
     ]);
     
     return {
@@ -306,7 +309,8 @@ function updateSeedVolume(data) {
         previousVolume: currentVolume,
         newVolume: newVolume,
         withdrawalAmount: withdrawalAmount,
-        timestamp: timestamp
+        timestamp: timestamp,
+        userName: userName  // Return the username to the frontend
       }
     };
     
@@ -418,18 +422,25 @@ function updateSeedDetails(data) {
     // Get user role based on PIN code
     const userRole = USER_ROLES[pinCode] || 'Unknown User';
 
+    // Get the current user's name
+    const userName = Session.getActiveUser().getUsername();
+
     // Log the changes in Inventory Logs with user information
     logsSheet.appendRow([
       timestamp,                  // Timestamp
       qrCode,                     // QR Code
       JSON.stringify(oldData),    // Previous Value
       JSON.stringify(newData),    // New Value
-      userRole                    // User role based on PIN code
+      userRole,                    // User role based on PIN code
+      userName                    // User's email/name
     ]);
 
     return {
       success: true,
-      message: "Seed details updated successfully"
+      message: "Seed details updated successfully",
+      data: {
+        userName: userName  // Return the username to the frontend
+      }
     };
   } catch (error) {
     console.error("Error in updateSeedDetails:", error);
@@ -664,4 +675,3 @@ function getWithdrawalLogs(qrCode = null) {
 // const specificLogs = getWithdrawalLogs("Sbn19-5-6-05-18-2025-O");
 
 // If no matches found, returns empty array []
-// const noMatches = getWithdrawalLogs("NonExistentQRCode");
